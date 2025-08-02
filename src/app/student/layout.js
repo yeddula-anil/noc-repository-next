@@ -1,4 +1,4 @@
-import StudentNavbar from "@/components/StudentNavbar";
+import StudentNavbar from "@/components/student-components/StudentNavbar";
 import "@/app/globals.css";
 
 export const metadata = {
