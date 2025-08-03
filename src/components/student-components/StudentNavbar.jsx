@@ -16,7 +16,7 @@ export const StudentNavbar = () => {
           {/* Left Side: Profile / Logo */}
           <div className="flex items-center space-x-3">
             <img
-              src="/profile.png" // replace with actual profile picture or logo
+              src="/profile.png"
               alt="Profile"
               className="h-10 w-10 rounded-full border-2 border-white"
             />
@@ -24,30 +24,30 @@ export const StudentNavbar = () => {
           </div>
 
           {/* Right Side: Menu (Desktop) + Message Icon */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Link href="/student" className="hover:text-gray-200">
-              Dashboard
-            </Link>
-            <Link href="/student/noc" className="hover:text-gray-200">
-              Apply NOC
-            </Link>
-            <Link href="/student/outpass" className="hover:text-gray-200">
-              Apply Outpass
-            </Link>
-            <Link href="/student/applications" className="hover:text-gray-200">
-              My Applications
-            </Link>
-            <Link href="/student/profile" className="hover:text-gray-200">
-              Profile
-            </Link>
+          <div className="hidden md:flex items-center space-x-4">
+            {[
+              { href: "/student", label: "Dashboard" },
+              { href: "/student/noc", label: "Apply NOC" },
+              { href: "/student/outpass", label: "Apply Outpass" },
+              { href: "/student/applications", label: "My Applications" },
+              { href: "/student/profile", label: "Profile" },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-3 py-2 border border-white rounded-md bg-indigo-500 hover:bg-indigo-700 transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
 
             {/* Message Icon */}
-            <Link href='/student/messages'>
-            <IconButton color="inherit">
-              <Badge badgeContent={unreadCount} color="error">
-                <MailIcon className="text-white" />
-              </Badge>
-            </IconButton>
+            <Link href="/student/messages">
+              <IconButton color="inherit">
+                <Badge badgeContent={unreadCount} color="error">
+                  <MailIcon className="text-white" />
+                </Badge>
+              </IconButton>
             </Link>
           </div>
 
@@ -92,21 +92,21 @@ export const StudentNavbar = () => {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden bg-white text-indigo-600 px-4 pb-3 space-y-2 shadow-lg">
-          <Link href="/student" className="block hover:text-indigo-800">
-            Dashboard
-          </Link>
-          <Link href="/student/noc" className="block hover:text-indigo-800">
-            Apply NOC
-          </Link>
-          <Link href="/student/outpass" className="block hover:text-indigo-800">
-            Apply Outpass
-          </Link>
-          <Link href="/student/applications" className="block hover:text-indigo-800">
-            My Applications
-          </Link>
-          <Link href="/student/profile" className="block hover:text-indigo-800">
-            Profile
-          </Link>
+          {[
+            { href: "/student", label: "Dashboard" },
+            { href: "/student/noc", label: "Apply NOC" },
+            { href: "/student/outpass", label: "Apply Outpass" },
+            { href: "/student/applications", label: "My Applications" },
+            { href: "/student/profile", label: "Profile" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="block px-3 py-2 border border-indigo-600 rounded-md bg-indigo-100 hover:bg-indigo-200 transition-colors"
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       )}
     </nav>

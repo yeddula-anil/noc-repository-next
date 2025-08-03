@@ -1,5 +1,6 @@
 import StudentNavbar from "@/components/student-components/StudentNavbar";
 import "@/app/globals.css";
+import { Toaster } from "react-hot-toast";
 
 export const metadata = {
   title: "Student Portal | NOC App",
@@ -13,8 +14,9 @@ export default function StudentLayout({ children }) {
       <StudentNavbar />
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="w-full m-0 p-0">
         {children}
+        <Toaster position="top-center" reverseOrder={false} />
       </main>
     </section>
   );

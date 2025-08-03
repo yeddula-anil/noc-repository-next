@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function ApplyOutpassPage() {
   const [formData, setFormData] = useState({
@@ -11,12 +11,43 @@ export default function ApplyOutpassPage() {
     parentMobile: "",
     year: "",
     branch: "",
+    hostel: "",
     reason: "",
     fromDate: "",
     toDate: "",
   });
 
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [outpassesLeft, setOutpassesLeft] = useState(null); 
+  const [loading, setLoading] = useState(true);
+
+  // simulate fetching student data & outpasses left
+  useEffect(() => {
+    setTimeout(() => {
+      // dummy student
+      const student = {
+        fullName: "Vikas Yeddula",
+        studentId: "20CS123",
+        collegeEmail: "vikas@college.edu",
+        roomNo: "B-204",
+        personalMobile: "9876543210",
+        parentMobile: "9123456780",
+        year: "E4",
+        branch: "CSE",
+        hostel: "BH-1",
+      };
+
+      // dummy outpasses left
+      const remaining = 0; // try setting 0 to test "no outpasses left" warning
+
+      setFormData((prev) => ({
+        ...prev,
+        ...student,
+      }));
+      setOutpassesLeft(remaining);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,10 +56,24 @@ export default function ApplyOutpassPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form Data:", formData);
+    if (outpassesLeft <= 0) return; 
+
+    console.log("Outpass submitted:", formData);
+
     setShowSnackbar(true);
-    setTimeout(() => setShowSnackbar(false), 3000); // auto-hide after 3s
+    setOutpassesLeft((prev) => prev - 1); 
+    setTimeout(() => setShowSnackbar(false), 3000);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-700">
+        Loading student data...
+      </div>
+    );
+  }
+
+  const noOutpassesLeft = outpassesLeft !== null && outpassesLeft <= 0;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-1">
@@ -36,6 +81,14 @@ export default function ApplyOutpassPage() {
         <h1 className="text-2xl font-bold mb-6 text-center text-indigo-700">
           Apply for Outpass
         </h1>
+
+        {noOutpassesLeft && (
+          <p className="text-red-600 text-center font-medium mb-4">
+            You do not have any outpasses left for this academic year. <br />
+            If emergency, please write a letter to the caretaker and take the
+            outpass manually.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Full Name */}
@@ -45,9 +98,8 @@ export default function ApplyOutpassPage() {
               type="text"
               name="fullName"
               value={formData.fullName}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
@@ -58,9 +110,8 @@ export default function ApplyOutpassPage() {
               type="text"
               name="studentId"
               value={formData.studentId}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
@@ -71,9 +122,8 @@ export default function ApplyOutpassPage() {
               type="email"
               name="collegeEmail"
               value={formData.collegeEmail}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
@@ -84,9 +134,8 @@ export default function ApplyOutpassPage() {
               type="text"
               name="roomNo"
               value={formData.roomNo}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
@@ -96,11 +145,9 @@ export default function ApplyOutpassPage() {
             <input
               type="tel"
               name="personalMobile"
-              pattern="[0-9]{10}"
               value={formData.personalMobile}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
@@ -110,68 +157,74 @@ export default function ApplyOutpassPage() {
             <input
               type="tel"
               name="parentMobile"
-              pattern="[0-9]{10}"
               value={formData.parentMobile}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              readOnly
+              className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
             />
           </div>
 
-          {/* Year */}
-          <div>
-            <label className="block font-medium text-gray-700">Year</label>
-            <select
-              name="year"
-              value={formData.year}
-              onChange={handleChange}
-              required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select Year</option>
-              <option value="P1">P1</option>
-              <option value="P2">P2</option>
-              <option value="E1">E1</option>
-              <option value="E2">E2</option>
-              <option value="E3">E3</option>
-              <option value="E4">E4</option>
-            </select>
+          {/* Year & Branch */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block font-medium text-gray-700">Year</label>
+              <input
+                type="text"
+                name="year"
+                value={formData.year}
+                readOnly
+                className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700">Branch</label>
+              <input
+                type="text"
+                name="branch"
+                value={formData.branch}
+                readOnly
+                className="w-full border text-gray-500 bg-gray-100 rounded-lg p-2"
+              />
+            </div>
           </div>
 
-          {/* Branch */}
+          {/* Hostel */}
           <div>
-            <label className="block font-medium text-gray-700">Branch (if B.Tech)</label>
+            <label className="block font-medium text-gray-700">Hostel</label>
             <select
-              name="branch"
-              value={formData.branch}
+              name="hostel"
+              value={formData.hostel}
               onChange={handleChange}
+              disabled={noOutpassesLeft}
               required
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
             >
-              <option value="">Select Branch</option>
-              <option value="CSE">CSE</option>
-              <option value="ECE">ECE</option>
-              <option value="EEE">EEE</option>
-              <option value="MECH">MECH</option>
-              <option value="CIVIL">CIVIL</option>
-              <option value="IT">IT</option>
+              <option value="">Select Hostel</option>
+              <option value="BH-1">BH-1</option>
+              <option value="BH1-backside">BH1-backside</option>
+              <option value="BH2">BH2</option>
+              <option value="BH2-backside">BH2-backside</option>
+              <option value="GH-1">GH-1</option>
+              <option value="GH-2">GH-2</option>
             </select>
           </div>
 
           {/* Reason */}
           <div>
-            <label className="block font-medium text-gray-700">Reason for Outpass</label>
+            <label className="block font-medium text-gray-700">
+              Reason for Outpass
+            </label>
             <textarea
               name="reason"
               value={formData.reason}
               onChange={handleChange}
+              disabled={noOutpassesLeft}
               required
               rows="3"
-              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+              className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
             ></textarea>
           </div>
 
-          {/* From Date & To Date */}
+          {/* From & To Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block font-medium text-gray-700">From Date</label>
@@ -180,8 +233,9 @@ export default function ApplyOutpassPage() {
                 name="fromDate"
                 value={formData.fromDate}
                 onChange={handleChange}
+                disabled={noOutpassesLeft}
                 required
-                className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+                className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
             <div>
@@ -191,8 +245,9 @@ export default function ApplyOutpassPage() {
                 name="toDate"
                 value={formData.toDate}
                 onChange={handleChange}
+                disabled={noOutpassesLeft}
                 required
-                className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+                className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
               />
             </div>
           </div>
@@ -200,7 +255,12 @@ export default function ApplyOutpassPage() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition"
+            disabled={noOutpassesLeft}
+            className={`w-full py-2 px-4 rounded-lg transition ${
+              noOutpassesLeft
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            }`}
           >
             Submit Application
           </button>
