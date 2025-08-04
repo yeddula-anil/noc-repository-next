@@ -6,8 +6,8 @@ export async function PATCH(req, { params }) {
   await dbConnect();
 
   try {
-    const { id } = await params; // ✅ await is required in your Next.js version
-    const body = await req.json().catch(() => ({})); // avoid crash if no body
+    const { id } = params;  // ❌ no await here
+    const body = await req.json().catch(() => ({}));
     const { action, remarks } = body;
 
     if (!action) {
@@ -25,7 +25,7 @@ export async function PATCH(req, { params }) {
       return NextResponse.json({ error: "No pending stage found" }, { status: 400 });
     }
 
-    // Update stage
+    // ✅ Update current stage
     currentApproval.status = action === "APPROVE" ? "APPROVED" : "REJECTED";
     currentApproval.remarks = remarks || "";
     currentApproval.updatedAt = new Date();
@@ -35,6 +35,7 @@ export async function PATCH(req, { params }) {
       const nextStageIndex = stageOrder.indexOf(currentApproval.stage) + 1;
 
       if (nextStageIndex < stageOrder.length) {
+        // Add next stage for review
         noc.approvals.push({
           stage: stageOrder[nextStageIndex],
           status: "PENDING",
@@ -42,7 +43,8 @@ export async function PATCH(req, { params }) {
         });
         noc.status = "INPROGRESS";
       } else {
-        noc.status = "APPROVED"; // ✅ Final stage
+        // Final approval
+        noc.status = "APPROVED";
       }
     } else {
       noc.status = "REJECTED";
