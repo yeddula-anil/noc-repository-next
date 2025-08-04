@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-const ApplyNocPage=()=>{
+
+const ApplyNocPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     studentId: "",
@@ -13,39 +14,77 @@ const ApplyNocPage=()=>{
   });
 
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ added loading state
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "proof") {
-      setFormData({ ...formData, proof: files[0] });
+      const file = files[0];
+      if (file && file.size > 5 * 1024 * 1024) {
+        // 5 MB limit
+        alert("File size should be less than 5MB");
+        e.target.value = ""; // reset file input
+        return;
+      }
+      setFormData({ ...formData, proof: file });
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setLoading(true); // ✅ show loader
 
-    // Mock submit
-    console.log("NOC Application Submitted:", formData);
+    const formDataToSend = new FormData();
+    formDataToSend.append("type", "NOC");
+    formDataToSend.append("fullName", formData.fullName);
+    formDataToSend.append("studentId", formData.studentId);
+    formDataToSend.append("collegeEmail", formData.collegeEmail);
+    formDataToSend.append("personalMobile", formData.personalMobile);
+    formDataToSend.append("branch", formData.branch);
+    formDataToSend.append("year", formData.year);
+    formDataToSend.append("reason", formData.reason);
+    if (formData.proof) {
+      formDataToSend.append("proof", formData.proof);
+    }
 
-    // Show snackbar
-    setShowSnackbar(true);
+    try {
+      const res = await fetch("/api/noc", {
+        method: "POST",
+        body: formDataToSend,
+      });
 
-    // Hide after 3 seconds
-    setTimeout(() => setShowSnackbar(false), 3000);
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || "Failed to submit NOC");
+        return;
+      }
 
-    // Clear form
-    setFormData({
-      fullName: "",
-      studentId: "",
-      collegeEmail: "",
-      personalMobile: "",
-      branch: "",
-      year: "",
-      reason: "",
-      proof: null,
-    });
+      // Success
+      setShowSnackbar(true);
+      setTimeout(() => setShowSnackbar(false), 3000);
+
+      // Reset form
+      setFormData({
+        fullName: "",
+        studentId: "",
+        collegeEmail: "",
+        personalMobile: "",
+        branch: "",
+        year: "",
+        reason: "",
+        proof: null,
+      });
+    } catch (err) {
+      console.error("Error submitting NOC:", err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+      setLoading(false); // ✅ hide loader
+    }
   };
 
   return (
@@ -55,7 +94,9 @@ const ApplyNocPage=()=>{
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Full Name */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">Full Name</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Full Name
+          </label>
           <input
             type="text"
             name="fullName"
@@ -68,7 +109,9 @@ const ApplyNocPage=()=>{
 
         {/* Student ID */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">Student ID</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Student ID
+          </label>
           <input
             type="text"
             name="studentId"
@@ -81,7 +124,9 @@ const ApplyNocPage=()=>{
 
         {/* College Email */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">College Email</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            College Email
+          </label>
           <input
             type="email"
             name="collegeEmail"
@@ -94,7 +139,9 @@ const ApplyNocPage=()=>{
 
         {/* Personal Mobile */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">Personal Mobile Number</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Personal Mobile Number
+          </label>
           <input
             type="tel"
             name="personalMobile"
@@ -108,7 +155,9 @@ const ApplyNocPage=()=>{
 
         {/* Branch */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">Branch</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Branch
+          </label>
           <select
             name="branch"
             value={formData.branch}
@@ -136,16 +185,18 @@ const ApplyNocPage=()=>{
             className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">Select Year</option>
-            <option value="1" >1st Year</option>
-            <option value="2" >2nd Year</option>
-            <option value="3" >3rd Year</option>
-            <option value="4" >4th Year</option>
+            <option value="E1">1st Year</option>
+            <option value="E2">2nd Year</option>
+            <option value="E3">3rd Year</option>
+            <option value="E4">4th Year</option>
           </select>
         </div>
 
         {/* Reason */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">Reason for Applying NOC</label>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Reason for Applying NOC
+          </label>
           <textarea
             name="reason"
             value={formData.reason}
@@ -157,30 +208,79 @@ const ApplyNocPage=()=>{
         </div>
 
         {/* Proof */}
-       <div>
-            <label className="block font-semibold text-gray-800 mb-1">
-                Upload Proof Document (PDF Only)
-            </label>
-            <input
-                type="file"
-                name="proof"
-                onChange={handleChange}
-                accept=".pdf"
-                required
-                className="w-full border rounded-lg p-2 file:mr-4 file:py-2 file:px-4
+        <div>
+          <label className="block font-semibold text-gray-800 mb-1">
+            Upload Proof Document (PDF Only)
+          </label>
+          <input
+            type="file"
+            name="proof"
+            onChange={handleChange}
+            accept=".pdf"
+            required
+            className="w-full border rounded-lg p-2 file:mr-4 file:py-2 file:px-4
                         file:rounded-full file:border-0
                         file:text-sm file:font-semibold
                         file:bg-indigo-50 file:text-indigo-700
                         hover:file:bg-indigo-100 text-gray-800"
-            />
+          />
         </div>
 
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition"
+          disabled={loading || submitting}
+          className={`w-full flex items-center justify-center py-2 px-4 rounded-lg transition ${
+            loading || submitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white"
+          }`}
         >
-          Submit Application
+          {loading ? (
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+          ) : submitting ? (
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+          ) : (
+            "Submit Application"
+          )}
         </button>
       </form>
 
@@ -192,6 +292,6 @@ const ApplyNocPage=()=>{
       )}
     </div>
   );
-}
+};
 
 export default ApplyNocPage;

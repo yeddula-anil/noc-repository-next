@@ -4,6 +4,7 @@ import { useState } from "react";
 const RoomIssueForm = () => {
   const [formData, setFormData] = useState({
     fullName: "",
+    email:"",
     studentId: "",
     roomNo: "",
     hostel: "",
@@ -14,30 +15,61 @@ const RoomIssueForm = () => {
   });
 
   const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState(""); // dynamic message
+  const [snackbarColor, setSnackbarColor] = useState("bg-green-600"); // dynamic color
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Room Issue Submitted:", formData);
+    console.log("📤 Sending data:", formData);
 
-    setShowSnackbar(true);
-    setTimeout(() => setShowSnackbar(false), 3000);
+    try {
+      const res = await fetch("/api/room-issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    setFormData({
-      fullName: "",
-      studentId: "",
-      roomNo: "",
-      hostel: "",
-      mobileNo: "",
-      year: "",
-      issueType: "",
-      description: "",
-    });
+      const data = await res.json();
+      console.log("📥 Response from server:", data);
+
+      if (!res.ok) {
+        setSnackbarMessage(data.error || "Failed to submit issue");
+        setSnackbarColor("bg-red-600");
+        setShowSnackbar(true);
+        setTimeout(() => setShowSnackbar(false), 3000);
+        return;
+      }
+
+      setSnackbarMessage("Room issue submitted successfully!");
+      setSnackbarColor("bg-green-600");
+      setShowSnackbar(true);
+      setTimeout(() => setShowSnackbar(false), 3000);
+
+      setFormData({
+        fullName: "",
+        email: "",
+        studentId: "",
+        roomNo: "",
+        hostel: "",
+        mobileNo: "",
+        year: "",
+        issueType: "",
+        description: "",
+      });
+    } catch (error) {
+      console.error("🔥 Network/Fetch error:", error);
+      setSnackbarMessage("Something went wrong. Please try again.");
+      setSnackbarColor("bg-red-600");
+      setShowSnackbar(true);
+      setTimeout(() => setShowSnackbar(false), 3000);
+    }
   };
+
 
   return (
     <div className="relative bg-white p-6 rounded-lg shadow-md max-w-3xl mx-auto">
@@ -53,6 +85,18 @@ const RoomIssueForm = () => {
             type="text"
             name="fullName"
             value={formData.fullName}
+            onChange={handleChange}
+            required
+            className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        {/*student email */}
+        <div>
+          <label className="block font-semibold text-gray-800 mb-1">College Mail</label>
+          <input
+            type="text"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             required
             className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
@@ -141,11 +185,11 @@ const RoomIssueForm = () => {
             className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">Select Issue</option>
-            <option value="fan">Fan Repair</option>
-            <option value="light">Light Repair</option>
-            <option value="carpentry">Carpentry Work</option>
-            <option value="plumbing">Plumbing Issue</option>
-            <option value="other">Other</option>
+            <option value="Fan Repair">Fan Repair</option>
+            <option value="Light Repair">Light Repair</option>
+            <option value="Carpentry">Carpentry Work</option>
+            <option value="Plumbing">Plumbing Issue</option>
+            <option value="Others">Other</option>
           </select>
         </div>
 
@@ -176,8 +220,10 @@ const RoomIssueForm = () => {
 
       {/* Snackbar */}
       {showSnackbar && (
-        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg animate-bounce">
-          Room issue submitted successfully!
+        <div
+          className={`fixed top-5 left-1/2 transform -translate-x-1/2 ${snackbarColor} text-white px-4 py-2 rounded shadow-lg animate-bounce`}
+        >
+          {snackbarMessage}
         </div>
       )}
     </div>

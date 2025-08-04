@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 
 export default function ApplyOutpassPage() {
   const [formData, setFormData] = useState({
+    type:"",
     fullName: "",
     studentId: "",
     collegeEmail: "",
@@ -20,16 +21,18 @@ export default function ApplyOutpassPage() {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [outpassesLeft, setOutpassesLeft] = useState(null); 
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // simulate fetching student data & outpasses left
   useEffect(() => {
     setTimeout(() => {
       // dummy student
       const student = {
+        type:"OUTPASS",
         fullName: "Vikas Yeddula",
-        studentId: "20CS123",
-        collegeEmail: "vikas@college.edu",
-        roomNo: "B-204",
+        studentId: "R200907",
+        collegeEmail: "vikasyeddula@gmail.com",
+        roomNo: "s-113",
         personalMobile: "9876543210",
         parentMobile: "9123456780",
         year: "E4",
@@ -38,7 +41,7 @@ export default function ApplyOutpassPage() {
       };
 
       // dummy outpasses left
-      const remaining = 0; // try setting 0 to test "no outpasses left" warning
+      const remaining = 6; // try setting 0 to test "no outpasses left" warning
 
       setFormData((prev) => ({
         ...prev,
@@ -54,16 +57,46 @@ export default function ApplyOutpassPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (outpassesLeft <= 0) return; 
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSubmitting(true)
+  if (outpassesLeft <= 0) return;
+
+  try {
+    const res = await fetch("/api/outpass", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      alert(error.error || "Failed to submit outpass");
+      return;
+    }
 
     console.log("Outpass submitted:", formData);
 
     setShowSnackbar(true);
-    setOutpassesLeft((prev) => prev - 1); 
+    setOutpassesLeft((prev) => prev - 1);
     setTimeout(() => setShowSnackbar(false), 3000);
-  };
+
+    // Clear reason and dates for next request
+    setFormData((prev) => ({
+      ...prev,
+      reason: "",
+      fromDate: "",
+      toDate: "",
+    }));
+  } catch (err) {
+    console.error("Error submitting outpass:", err);
+    alert("Something went wrong. Please try again.");
+  }
+  finally{
+    setSubmitting(false)
+  }
+};
+
 
   if (loading) {
     return (
@@ -253,17 +286,42 @@ export default function ApplyOutpassPage() {
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={noOutpassesLeft}
-            className={`w-full py-2 px-4 rounded-lg transition ${
-              noOutpassesLeft
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white"
-            }`}
-          >
-            Submit Application
-          </button>
+          {/* Submit */}
+            <button
+              type="submit"
+              disabled={noOutpassesLeft || submitting}
+              className={`w-full flex items-center justify-center py-2 px-4 rounded-lg transition ${
+                noOutpassesLeft || submitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+            >
+              {submitting ? (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+              ) : (
+                "Submit Application"
+              )}
+            </button>
+
         </form>
       </div>
 

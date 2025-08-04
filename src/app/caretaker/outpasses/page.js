@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -14,56 +14,51 @@ import toast, { Toaster } from "react-hot-toast";
 
 export default function CaretakerOutpassesPage() {
   const [statusFilter, setStatusFilter] = useState("All");
-  const [outpasses, setOutpasses] = useState([
-    {
-      id: "OUT001",
-      name: "Vikas Yeddula",
-      studentId: "20CS123",
-      roomNo: "C-201",
-      branch: "CSE",
-      year: "4th",
-      hostel: "Tagore Hostel",
-      reason: "Family Function",
-      fromDate: "2025-08-05",
-      toDate: "2025-08-08",
-      status: "Pending",
-      timestamp: "2025-08-02T09:30:00",
-    },
-    {
-      id: "OUT002",
-      name: "Rahul Verma",
-      studentId: "20EC456",
-      roomNo: "B-105",
-      branch: "ECE",
-      year: "3rd",
-      hostel: "Nehru Hostel",
-      reason: "Medical Checkup",
-      fromDate: "2025-08-03",
-      toDate: "2025-08-04",
-      status: "Approved",
-      timestamp: "2025-08-01T15:45:00",
-    },
-    {
-      id: "OUT003",
-      name: "Meena Gupta",
-      studentId: "20ME789",
-      roomNo: "A-110",
-      branch: "MECH",
-      year: "2nd",
-      hostel: "Patel Hostel",
-      reason: "Relative Visit",
-      fromDate: "2025-08-06",
-      toDate: "2025-08-07",
-      status: "Rejected",
-      rejectReason: "Insufficient details",
-      timestamp: "2025-07-30T11:15:00",
-    },
-  ]);
-
+  const [outpasses, setOutpasses] = useState([]);
   const [sortOrder] = useState("asc"); // oldest first
   const [openModal, setOpenModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  // Fetch outpasses from backend (default year = E3 for now)
+  useEffect(() => {
+    const fetchOutpasses = async () => {
+      try {
+        const res = await fetch(`/api/caretaker/outpass?year=E4`);
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setOutpasses(
+            data.data.map((o) => ({
+              id: o._id,
+              name: o.fullName,
+              studentId: o.studentId,
+              roomNo: o.roomNo,
+              branch: o.branch || "N/A",
+              year: o.year,
+              hostel: o.hostel,
+              reason: o.reason,
+              fromDate: new Date(o.fromDate).toLocaleDateString(),
+              toDate: new Date(o.toDate).toLocaleDateString(),
+              status: o.status,
+              rejectReason: o.remarks,
+              timestamp: o.createdAt,
+            }))
+          );
+        } else {
+          toast.error(data.message || "Failed to load outpasses", {
+            position: "top-center",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching outpasses:", error);
+        toast.error("Server error fetching outpasses", {
+          position: "top-center",
+        });
+      }
+    };
+
+    fetchOutpasses();
+  }, []);
 
   // Filter + sort
   const filteredOutpasses = useMemo(() => {
@@ -79,12 +74,12 @@ export default function CaretakerOutpassesPage() {
   }, [statusFilter, sortOrder, outpasses]);
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved":
+    switch (status.toUpperCase()) {
+      case "APPROVED":
         return "success";
-      case "Rejected":
+      case "REJECTED":
         return "error";
-      case "Pending":
+      case "PENDING":
         return "warning";
       default:
         return "default";
@@ -92,11 +87,29 @@ export default function CaretakerOutpassesPage() {
   };
 
   // Approve
-  const handleApprove = (id) => {
-    setOutpasses((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: "Approved" } : o))
-    );
-    toast.success("Outpass approved successfully!", { position: "top-center" });
+  const handleApprove = async (id) => {
+    try {
+      const res = await fetch(`/api/caretaker/outpass`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outpassId: id, action: "APPROVE" }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setOutpasses((prev) =>
+          prev.map((o) => (o.id === id ? { ...o, status: "APPROVED" } : o))
+        );
+        toast.success("Outpass approved successfully!", {
+          position: "top-center",
+        });
+      } else {
+        toast.error(data.error || "Approval failed", { position: "top-center" });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Server error during approval", { position: "top-center" });
+    }
   };
 
   // Reject modal open
@@ -106,20 +119,43 @@ export default function CaretakerOutpassesPage() {
   };
 
   // Submit rejection
-  const handleRejectSubmit = () => {
+  const handleRejectSubmit = async () => {
     if (!rejectReason.trim()) {
       toast.error("Please enter a rejection reason", { position: "top-center" });
       return;
     }
-    setOutpasses((prev) =>
-      prev.map((o) =>
-        o.id === selectedId ? { ...o, status: "Rejected", rejectReason } : o
-      )
-    );
-    setOpenModal(false);
-    setRejectReason("");
-    setSelectedId(null);
-    toast.error("Outpass rejected", { position: "top-center" });
+
+    try {
+      const res = await fetch(`/api/caretaker/outpass`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          outpassId: selectedId,
+          action: "REJECT",
+          rejectionReason: rejectReason,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setOutpasses((prev) =>
+          prev.map((o) =>
+            o.id === selectedId
+              ? { ...o, status: "REJECTED", rejectReason }
+              : o
+          )
+        );
+        setOpenModal(false);
+        setRejectReason("");
+        setSelectedId(null);
+        toast.error("Outpass rejected", { position: "top-center" });
+      } else {
+        toast.error(data.error || "Rejection failed", { position: "top-center" });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Server error during rejection", { position: "top-center" });
+    }
   };
 
   return (
@@ -145,9 +181,9 @@ export default function CaretakerOutpassesPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <MenuItem value="All">All</MenuItem>
-            <MenuItem value="Pending">Pending</MenuItem>
-            <MenuItem value="Approved">Approved</MenuItem>
-            <MenuItem value="Rejected">Rejected</MenuItem>
+            <MenuItem value="PENDING">Pending</MenuItem>
+            <MenuItem value="APPROVED">Approved</MenuItem>
+            <MenuItem value="REJECTED">Rejected</MenuItem>
           </Select>
         </FormControl>
       </div>
@@ -193,10 +229,12 @@ export default function CaretakerOutpassesPage() {
                   {new Date(o.timestamp).toLocaleString()}
                 </td>
                 <td className="p-3 border text-red-600">
-                  {o.status === "Rejected" ? o.rejectReason || "No reason given" : "-"}
+                  {o.status === "REJECTED"
+                    ? o.rejectReason || "No reason given"
+                    : "-"}
                 </td>
                 <td className="p-3 border">
-                  {o.status === "Pending" && (
+                  {o.status === "PENDING" && (
                     <div className="flex gap-3">
                       <Button
                         variant="contained"
@@ -230,7 +268,8 @@ export default function CaretakerOutpassesPage() {
                 {o.name}
               </Typography>
               <Typography variant="body2" className="text-gray-700">
-                ID: {o.studentId} | Room: {o.roomNo} | Branch: {o.branch} | Year: {o.year}
+                ID: {o.studentId} | Room: {o.roomNo} | Branch: {o.branch} | Year:{" "}
+                {o.year}
               </Typography>
               <Typography variant="body2" className="text-gray-600">
                 Hostel: {o.hostel}
@@ -241,7 +280,7 @@ export default function CaretakerOutpassesPage() {
               <Typography variant="body2" className="text-gray-600">
                 From: {o.fromDate} | To: {o.toDate}
               </Typography>
-              {o.status === "Rejected" && (
+              {o.status === "REJECTED" && (
                 <Typography variant="body2" className="text-red-600 mt-1">
                   Rejection Reason: {o.rejectReason || "No reason given"}
                 </Typography>
@@ -252,7 +291,7 @@ export default function CaretakerOutpassesPage() {
                   {new Date(o.timestamp).toLocaleString()}
                 </Typography>
               </div>
-              {o.status === "Pending" && (
+              {o.status === "PENDING" && (
                 <div className="mt-3 flex gap-3">
                   <Button
                     variant="contained"
@@ -308,7 +347,11 @@ export default function CaretakerOutpassesPage() {
             <Button variant="outlined" onClick={() => setOpenModal(false)}>
               Cancel
             </Button>
-            <Button variant="contained" color="error" onClick={handleRejectSubmit}>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleRejectSubmit}
+            >
               Submit
             </Button>
           </div>
