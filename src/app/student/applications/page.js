@@ -5,6 +5,7 @@ import Application from "@/components/student-components/ApplicationCard"; // im
 
 export default function MyApplicationsPage() {
   const [applications, setApplications] = useState([]);
+  const [loading,setLoading]=useState(true);
 
   // Get current studentId (replace with JWT/auth logic if needed)
   const studentId =
@@ -15,6 +16,7 @@ export default function MyApplicationsPage() {
   useEffect(() => {
     async function fetchApplications() {
       try {
+        
         const res = await fetch(`/api/applications/${encodeURIComponent(studentId)}`);
         if (!res.ok) {
           throw new Error(`Failed to fetch applications: ${res.status}`);
@@ -25,9 +27,13 @@ export default function MyApplicationsPage() {
       } catch (error) {
         console.error("Error fetching applications:", error);
       }
+      finally{
+        setLoading(false);
+      }
     }
 
     fetchApplications();
+    
   }, [studentId]);
 
   return (
@@ -38,7 +44,7 @@ export default function MyApplicationsPage() {
 
       {applications.length === 0 ? (
         <Typography variant="body1" className="text-gray-500">
-          No applications found for the user!!!
+          {loading ? "Loading Applications":"No Applications found for the user"}
         </Typography>
       ) : (
         <div className="space-y-4">

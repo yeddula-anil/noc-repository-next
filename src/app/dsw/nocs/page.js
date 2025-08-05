@@ -1,5 +1,6 @@
 "use client";
-import { useState, useMemo } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -12,49 +13,55 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function CaretakerNOCsPage() {
+export default function DswNOCsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
-  const [queries, setQueries] = useState([
-    {
-      id: "NOC001",
-      student: "Vikas Yeddula",
-      studentId: "20CS123",
-      branch: "CSE",
-      year: "4th",
-      reason: "For higher studies application",
-      documentUrl: "/docs/noc_higher_studies.pdf",
-      status: "Pending",
-      timestamp: "2025-08-02T10:00:00",
-    },
-    {
-      id: "NOC002",
-      student: "Rahul Verma",
-      studentId: "20EC456",
-      branch: "ECE",
-      year: "3rd",
-      reason: "For internship application",
-      documentUrl: "/docs/noc_internship.pdf",
-      status: "Approved",
-      timestamp: "2025-08-01T12:30:00",
-    },
-    {
-      id: "NOC003",
-      student: "Meena Gupta",
-      studentId: "20ME789",
-      branch: "MECH",
-      year: "2nd",
-      reason: "For scholarship verification",
-      documentUrl: null,
-      status: "Rejected",
-      rejectReason: "Incomplete documents",
-      timestamp: "2025-07-31T09:45:00",
-    },
-  ]);
-
-  const [sortOrder] = useState("asc"); // oldest first
+  const [queries, setQueries] = useState([]);
+  const [yearFilter, setYearFilter] = useState("");
+  const [sortOrder] = useState("asc");
   const [openModal, setOpenModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  // Fetch DSW NOCs
+  useEffect(() => {
+    const fetchNOCs = async () => {
+      try {
+        const queryString = yearFilter ? `?year=${yearFilter}&stage=DSW` : "?stage=DSW";
+        const res = await fetch(`/api/dsw/nocs${queryString}`);
+        if (!res.ok) throw new Error("Failed to fetch NOCs");
+
+        const data = await res.json();
+
+        if (!Array.isArray(data)) {
+          setQueries([]);
+          return;
+        }
+
+        const formatted = data.map((noc) => {
+          const dswApproval = noc.approvals?.find((a) => a.stage === "DSW");
+          return {
+            id: noc._id,
+            student: noc.fullName,
+            studentId: noc.studentId,
+            collegeEmail: noc.collegeEmail,
+            branch: noc.branch,
+            year: noc.year,
+            reason: noc.reason,
+            documentUrl: noc._id,
+            status: dswApproval?.status || "PENDING",
+            rejectReason: dswApproval?.status === "REJECTED" ? dswApproval?.remarks : null,
+            timestamp: noc.createdAt,
+          };
+        });
+
+        setQueries(formatted);
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to load NOC applications", { position: "top-center" });
+      }
+    };
+    fetchNOCs();
+  }, [yearFilter]);
 
   // Filter + sort
   const filteredQueries = useMemo(() => {
@@ -71,23 +78,38 @@ export default function CaretakerNOCsPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Approved":
+      case "APPROVED":
         return "success";
-      case "Rejected":
+      case "REJECTED":
         return "error";
-      case "Pending":
+      case "PENDING":
         return "warning";
       default:
         return "default";
     }
   };
 
-  // Approve
-  const handleApprove = (id) => {
-    setQueries((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, status: "Approved" } : q))
-    );
-    toast.success("Application approved successfully!", { position: "top-center" });
+  // Approve via backend
+  const handleApprove = async (id) => {
+    try {
+      const res = await fetch(`/api/noc/${id}/approve`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "APPROVE" })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to approve");
+
+      setQueries((prev) =>
+        prev.map((q) => (q.id === id ? { ...q, status: "APPROVED" } : q))
+      );
+
+      toast.success("Application approved successfully!", { position: "top-center" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve", { position: "top-center" });
+    }
   };
 
   // Reject modal open
@@ -97,20 +119,34 @@ export default function CaretakerNOCsPage() {
   };
 
   // Submit rejection
-  const handleRejectSubmit = () => {
+  const handleRejectSubmit = async () => {
     if (!rejectReason.trim()) {
       toast.error("Please enter a rejection reason", { position: "top-center" });
       return;
     }
-    setQueries((prev) =>
-      prev.map((q) =>
-        q.id === selectedId ? { ...q, status: "Rejected", rejectReason } : q
-      )
-    );
+    try {
+      const res = await fetch(`/api/dsw/nocs/${selectedId}/reject`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remarks: rejectReason }),
+      });
+
+      if (!res.ok) throw new Error("Failed to reject application");
+
+      setQueries((prev) =>
+        prev.map((q) =>
+          q.id === selectedId ? { ...q, status: "REJECTED", rejectReason } : q
+        )
+      );
+
+      toast.error("Application rejected", { position: "top-center" });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to reject", { position: "top-center" });
+    }
     setOpenModal(false);
     setRejectReason("");
     setSelectedId(null);
-    toast.error("Application rejected", { position: "top-center" });
   };
 
   return (
@@ -120,7 +156,7 @@ export default function CaretakerNOCsPage() {
       {/* Hero Section */}
       <div className="text-center mb-8">
         <Typography variant="h4" className="font-bold text-indigo-700 mb-2">
-          NOC Requests from Students
+          NOC Requests for DSW Approval
         </Typography>
         <Typography variant="body1" className="text-gray-600">
           Review and take action on NOC applications.
@@ -136,27 +172,40 @@ export default function CaretakerNOCsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <MenuItem value="All">All</MenuItem>
-            <MenuItem value="Pending">Pending</MenuItem>
-            <MenuItem value="Approved">Approved</MenuItem>
-            <MenuItem value="Rejected">Rejected</MenuItem>
+            <MenuItem value="PENDING">Pending</MenuItem>
+            <MenuItem value="APPROVED">Approved</MenuItem>
+            <MenuItem value="REJECTED">Rejected</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl className="w-full sm:w-1/3">
+          <InputLabel>Year</InputLabel>
+          <Select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+          >
+            <MenuItem value="">All Years</MenuItem>
+            <MenuItem value="E1">1st Year</MenuItem>
+            <MenuItem value="E2">2nd Year</MenuItem>
+            <MenuItem value="E3">3rd Year</MenuItem>
+            <MenuItem value="E4">4th Year</MenuItem>
           </Select>
         </FormControl>
       </div>
 
       {/* Desktop Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse hidden sm:table">
+      <div className="overflow-x-auto hidden sm:block">
+        <table className="w-full border-collapse">
           <thead>
             <tr className="bg-indigo-200 text-indigo-900 font-semibold">
-              <th className="p-3 border">ID</th>
               <th className="p-3 border">Student</th>
               <th className="p-3 border">Student ID</th>
+              <th className="p-3 border">Email</th>
               <th className="p-3 border">Branch</th>
               <th className="p-3 border">Year</th>
               <th className="p-3 border">Reason</th>
               <th className="p-3 border">Document</th>
-              <th className="p-3 border">Status</th>
-              <th className="p-3 border">Timestamp</th>
+              <th className="p-3 border">DSW Status</th>
               <th className="p-3 border">Rejection Reason</th>
               <th className="p-3 border">Actions</th>
             </tr>
@@ -164,9 +213,9 @@ export default function CaretakerNOCsPage() {
           <tbody>
             {filteredQueries.map((q) => (
               <tr key={q.id} className="hover:bg-gray-50 text-gray-800">
-                <td className="p-3 border">{q.id}</td>
                 <td className="p-3 border">{q.student}</td>
                 <td className="p-3 border">{q.studentId}</td>
+                <td className="p-3 border">{q.collegeEmail}</td>
                 <td className="p-3 border">{q.branch}</td>
                 <td className="p-3 border">{q.year}</td>
                 <td className="p-3 border">{q.reason}</td>
@@ -175,7 +224,9 @@ export default function CaretakerNOCsPage() {
                     <Button
                       variant="outlined"
                       size="small"
-                      onClick={() => window.open(q.documentUrl, "_blank")}
+                      onClick={() =>
+                        window.open(`/api/noc/${q.documentUrl}/proof`, "_blank")
+                      }
                     >
                       View Document
                     </Button>
@@ -186,14 +237,11 @@ export default function CaretakerNOCsPage() {
                 <td className="p-3 border">
                   <Chip label={q.status} color={getStatusColor(q.status)} />
                 </td>
-                <td className="p-3 border">
-                  {new Date(q.timestamp).toLocaleString()}
-                </td>
                 <td className="p-3 border text-red-600">
-                  {q.status === "Rejected" ? q.rejectReason || "No reason given" : "-"}
+                  {q.status === "REJECTED" ? q.rejectReason || "No reason given" : "-"}
                 </td>
                 <td className="p-3 border">
-                  {q.status === "Pending" && (
+                  {q.status === "PENDING" && (
                     <div className="flex gap-3">
                       <Button
                         variant="contained"
@@ -218,68 +266,6 @@ export default function CaretakerNOCsPage() {
             ))}
           </tbody>
         </table>
-
-        {/* Mobile Cards */}
-        <div className="grid gap-5 sm:hidden">
-          {filteredQueries.map((q) => (
-            <div key={q.id} className="border rounded-lg p-4 shadow-md bg-white">
-              <Typography className="font-semibold text-indigo-800">
-                {q.student}
-              </Typography>
-              <Typography variant="body2" className="text-gray-700">
-                ID: {q.studentId} | Branch: {q.branch} | Year: {q.year}
-              </Typography>
-              <Typography variant="body2" className="text-gray-600">
-                Reason: {q.reason}
-              </Typography>
-              {q.documentUrl ? (
-                <Button
-                  className="mt-2"
-                  variant="outlined"
-                  size="small"
-                  onClick={() => window.open(q.documentUrl, "_blank")}
-                >
-                  View Document
-                </Button>
-              ) : (
-                <Typography variant="body2" className="text-gray-500 mt-2">
-                  No document submitted
-                </Typography>
-              )}
-              {q.status === "Rejected" && (
-                <Typography variant="body2" className="text-red-600 mt-1">
-                  Rejection Reason: {q.rejectReason || "No reason given"}
-                </Typography>
-              )}
-              <div className="mt-2 flex justify-between items-center">
-                <Chip label={q.status} color={getStatusColor(q.status)} />
-                <Typography variant="caption" className="text-gray-500">
-                  {new Date(q.timestamp).toLocaleString()}
-                </Typography>
-              </div>
-              {q.status === "Pending" && (
-                <div className="mt-3 flex gap-3">
-                  <Button
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    onClick={() => handleApprove(q.id)}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    size="small"
-                    onClick={() => handleReject(q.id)}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Rejection Modal */}

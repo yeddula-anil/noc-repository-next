@@ -58,7 +58,7 @@ export async function GET(req) {
     const year = searchParams.get("year");
 
     const filter = year ? { year } : {};
-    const nocs = await Noc.find(filter).select("-proof").sort({ createdAt: -1 }); 
+    const nocs = await Noc.find(filter).sort({ createdAt: -1 }); 
     // don't fetch proof to avoid big payloads
 
     return NextResponse.json(nocs);

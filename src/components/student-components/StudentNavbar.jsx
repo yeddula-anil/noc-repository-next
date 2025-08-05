@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import Link from "next/link";
 import IconButton from "@mui/material/IconButton";
 import Badge from "@mui/material/Badge";
@@ -7,7 +7,27 @@ import MailIcon from "@mui/icons-material/Mail";
 
 export const StudentNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [unreadCount] = useState(3); // Example count, can be dynamic
+  const [unreadCount,setUnreadCount] = useState(0);
+  const email =
+    typeof window !== "undefined"
+      ? localStorage.getItem("collegeEmail") || "vikasyeddula@gmail.com"
+      : "vikasyeddula@gmail.com";
+   useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const res = await fetch(`/api/messages/byEmail/${encodeURIComponent(email)}`);
+        if (!res.ok) {
+          console.error("Failed to fetch messages:", res.status);
+          return; // bail silently
+        }
+        const data = await res.json();
+        setUnreadCount(data?.unreadCount || 0);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    }
+    fetchUnread();
+  }, [email]); // Example count, can be dynamic
 
   return (
     <nav className="bg-indigo-600 text-white shadow-md">

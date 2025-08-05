@@ -18,7 +18,7 @@ export default withAuth(
         if (pathname.startsWith("/student") && token.roles.includes("student")) return true;
 
         // DSW routes
-        if (pathname.startsWith("/dsw") && token.roles.includes("dsw")) return true;
+        if (pathname.startsWith("/dsw")) return true;
 
         // Dean routes
         if (pathname.startsWith("/dean") && token.roles.includes("dean")) return true;
