@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import PDFDocument from "pdfkit";
 import { Readable } from "stream";
+import Message from "../../../../models/Message";
 import dbConnect from "../../../lib/dbConnect"; 
 import Request from "../../../../models/Request"; // Your mongoose model
 
@@ -77,6 +78,20 @@ export async function POST(req) {
         //   },
         // ],
       });
+
+      await Message.create({
+        sender: "Caretaker",
+        receiverEmail: outpass.collegeEmail,
+        subject: "Outpass Approved ✅",
+        content: `Dear ${outpass.fullName}, your outpass has been approved.`,
+      //   attachments: [
+      //     {
+      //       filename: "Outpass.pdf",
+      //       data: pdfBuffer,
+      //       contentType: "application/pdf",
+      //     },
+      //   ],
+        });
       console.log("email successfully sent")
 
       return NextResponse.json({ message: "Outpass approved and email sent" });
@@ -92,6 +107,13 @@ export async function POST(req) {
         to: outpass.collegeEmail,
         subject: "Outpass Rejected ❌",
         text: `Dear ${outpass.fullName}, your outpass request has been rejected.\n\n due to this Reason: ${rejectionReason}`,
+      });
+
+      await Message.create({
+        sender: "Caretaker",
+        receiverEmail: outpass.collegeEmail,
+        subject: "Outpass Rejected ❌",
+        content: `Dear ${outpass.fullName}, your outpass request has been rejected.\n\nReason: ${rejectionReason}`,
       });
 
       return NextResponse.json({ message: "Outpass rejected and email sent" });

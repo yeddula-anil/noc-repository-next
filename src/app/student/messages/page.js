@@ -1,37 +1,54 @@
 "use client";
+import { useEffect, useState } from "react";
 import MessageCard from "@/components/student-components/MessageCard";
 
 export default function MessagesPage() {
-  // Example messages
-  const messages = [
-    {
-      id: 1,
-      sender: "Admin",
-      text: "Your NOC request has been approved. Please collect your document from the office. The PDF is attached below.",
-      pdf: "/pdfs/noc_approval.pdf",
-      timestamp: "2025-08-01 18:30",
-    },
-    {
-      id: 2,
-      sender: "Warden",
-      text: "Please collect your outpass tomorrow from the hostel office.",
-      pdf: null,
-      timestamp: "2025-08-01 14:10",
-    },
-    {
-      id: 3,
-      sender: "Faculty",
-      text: "A meeting has been scheduled at 4 PM today in Room 204. Attendance is compulsory for all students.",
-      pdf: "/pdfs/meeting_schedule.pdf",
-      timestamp: "2025-07-31 20:45",
-    },
-  ];
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const email =
+    typeof window !== "undefined"
+      ? localStorage.getItem("collegeEmail") || "vikasyeddula@gmail.com"
+      : "vikasyeddula@gmail.com";
+
+  useEffect(() => {
+    async function fetchMessages() {
+      try {
+        const res = await fetch(`/api/messages/byEmail/${encodeURIComponent(email)}`);
+        if (!res.ok) throw new Error("Failed to fetch messages");
+        const data = await res.json();
+        setMessages(data.messages || []);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMessages();
+  }, [email]);
+
+  // handler to update message state when marked as read
+  const handleMarkAsRead = (id) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg._id === id ? { ...msg, isRead: true } : msg
+      )
+    );
+  };
+
+  if (loading) return <p className="text-gray-500">Loading messages...</p>;
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-indigo-700 mb-6">My Messages</h1>
       {messages.length > 0 ? (
-        messages.map((msg) => <MessageCard key={msg.id} msg={msg} />)
+        messages.map((msg) => (
+          <MessageCard
+            key={msg._id}
+            msg={msg}
+            onMarkAsRead={handleMarkAsRead} // pass handler
+          />
+        ))
       ) : (
         <p className="text-gray-500">No messages found</p>
       )}
