@@ -6,52 +6,29 @@ import Application from "@/components/student-components/ApplicationCard"; // im
 export default function MyApplicationsPage() {
   const [applications, setApplications] = useState([]);
 
-  // Example: get current user (replace with your auth logic or JWT)
-  const currentUser = localStorage.getItem("username") || "Vikas Yeddula";
+  // Get current studentId (replace with JWT/auth logic if needed)
+  const studentId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("studentId") || "R200907"
+      : "R200907";
 
   useEffect(() => {
-    // Example applications (replace with API fetch)
-    const allApplications = [
-      {
-        id: 1,
-        user: "Vikas Yeddula",
-        type: "NOC",
-        reason: "Applying for NOC",
-        status: "Pending",
-        timestamp: "2025-07-28T10:30:00",
-      },
-      {
-        id: 2,
-        user: "John Doe",
-        type: "Outpass",
-        reason: "Weekend Leave",
-        status: "Approved",
-        timestamp: "2025-07-30T14:45:00",
-      },
-      {
-        id: 3,
-        user: "Vikas Yeddula",
-        type: "Outpass",
-        reason: "Family Function",
-        status: "Approved",
-        timestamp: "2025-08-01T09:15:00",
-      },
-    ];
+    async function fetchApplications() {
+      try {
+        const res = await fetch(`/api/applications/${encodeURIComponent(studentId)}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch applications: ${res.status}`);
+        }
 
-    // Filter for current user's NOC/Outpass applications
-    const userApps = allApplications.filter(
-      (app) =>
-        app.user === currentUser &&
-        (app.type === "NOC" || app.type === "Outpass")
-    );
+        const data = await res.json();
+        setApplications(data);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+      }
+    }
 
-    // Sort recent first
-    const sortedApps = [...userApps].sort(
-      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    );
-
-    setApplications(sortedApps);
-  }, [currentUser]);
+    fetchApplications();
+  }, [studentId]);
 
   return (
     <div className="max-w-2xl mx-auto p-5">
@@ -66,7 +43,7 @@ export default function MyApplicationsPage() {
       ) : (
         <div className="space-y-4">
           {applications.map((app) => (
-            <Application key={app.id} app={app} />
+            <Application key={app._id || app.id} app={app} />
           ))}
         </div>
       )}

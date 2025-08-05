@@ -10,10 +10,12 @@ export default function ApplicationCard({ app }) {
   // Decide chip color based on status
   const getStatusColor = (status) => {
     switch (status) {
-      case "Approved":
+      case "APPROVED":
         return "success";
-      case "Rejected":
+      case "REJECTED":
         return "error";
+      case "INPROGRESS":
+         return "secondary"
       default:
         return "warning"; // Pending
     }
@@ -36,7 +38,7 @@ export default function ApplicationCard({ app }) {
 
         {/* Applicant Name */}
         <Typography variant="body2" className="text-gray-700 mb-1">
-          <span className="font-medium">Applicant:</span> {app.user}
+          <span className="font-medium">Applicant:</span> {app.fullName}
         </Typography>
 
         {/* Reason */}
@@ -46,7 +48,7 @@ export default function ApplicationCard({ app }) {
 
         {/* Date */}
         <Typography variant="caption" className="text-gray-500 block mb-3">
-          Submitted on: {new Date(app.timestamp).toLocaleString()}
+          Submitted on: {new Date(app.createdAt).toLocaleString()}
         </Typography>
 
         {/* Action Buttons */}
