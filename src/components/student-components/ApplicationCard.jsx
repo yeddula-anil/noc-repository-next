@@ -53,7 +53,7 @@ export default function ApplicationCard({ app }) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-2 mt-2">
-          <Link href={`/student/applications/${app.id}`}>
+          <Link href={`/student/applications/${app._id}?type=${app.type}`}>
             <Button
               variant="contained"
               color="primary"
@@ -63,7 +63,7 @@ export default function ApplicationCard({ app }) {
               View Details
             </Button>
           </Link>
-          <Link href={`/student/applications/track`}>
+          <Link href={`/student/applications/${app._id}/track?type=${app.type}`}>
             <Button
               variant="outlined"
               color="secondary"

@@ -19,7 +19,7 @@ export async function GET(req, { params }) {
   if (year) filter.year = year;
 
   const [nocApps, outpassApps] = await Promise.all([
-    Noc.find(filter).lean(),
+    Noc.find(filter).select("-proof").lean(),
     Request.find(filter).lean(),
   ]);
 

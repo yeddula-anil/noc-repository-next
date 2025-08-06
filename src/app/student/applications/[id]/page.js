@@ -1,5 +1,5 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import Card from "@mui/material/Card";
@@ -11,47 +11,33 @@ export default function ApplicationDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [application, setApplication] = useState(null);
+  const searchParams = useSearchParams();
+  const type = searchParams.get("type");
 
   useEffect(() => {
-    // Mock data (replace with API call)
-    const allApplications = [
-      {
-        id: "1",
-        type: "NOC",
-        status: "Pending",
-        timestamp: "2025-07-28T10:30:00",
-        fullName: "Vikas Yeddula",
-        studentId: "20CS123",
-        collegeEmail: "vikas@college.edu",
-        personalMobile: "9876543210",
-        branch: "CSE",
-        year: "4th",
-        reason: "For higher studies application",
-        proof: "/docs/noc-proof.pdf",
-      },
-      {
-        id: "2",
-        type: "Outpass",
-        status: "Approved",
-        timestamp: "2025-08-01T09:15:00",
-        fullName: "Vikas Yeddula",
-        studentId: "20CS123",
-        collegeEmail: "vikas@college.edu",
-        roomNo: "B-203",
-        personalMobile: "9876543210",
-        parentMobile: "9876501234",
-        branch: "CSE",
-        year: "4th",
-        reason: "Family Function",
-        fromDate: "2025-08-05",
-        toDate: "2025-08-07",
-        proof: "/docs/outpass-proof.pdf",
-      },
-    ];
+    const fetchApplication = async () => {
+      try {
+        const endpoint = type === "NOC" 
+            ? `/api/noc/${id}` 
+            : `/api/outpass/${id}`;
 
-    const found = allApplications.find((app) => app.id === id);
-    setApplication(found);
-  }, [id]);
+        const res = await fetch(endpoint, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          throw new Error(`Failed to fetch application: ${res.status}`);
+        }
+        const data = await res.json();
+        setApplication(data);
+      } catch (error) {
+        console.error("Error fetching application:", error);
+      }
+    };
+
+    if (id && type) {
+      fetchApplication();
+    }
+  }, [id, type]);
 
   if (!application) {
     return (
@@ -135,7 +121,7 @@ export default function ApplicationDetailsPage() {
             </>
           )}
 
-          {application.type === "Outpass" && (
+          {application.type === "OUTPASS" && (
             <>
               <Typography variant="body1" className="mb-2">
                 <strong>Full Name:</strong> {application.fullName}
@@ -187,7 +173,7 @@ export default function ApplicationDetailsPage() {
           )}
 
           {/* Edit Button if Pending */}
-          {application.status === "Pending" && (
+          {application.status === "PENDING" && (
             <div className="mt-4">
               <Button
                 variant="contained"

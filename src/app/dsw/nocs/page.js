@@ -21,10 +21,12 @@ export default function DswNOCsPage() {
   const [openModal, setOpenModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Fetch DSW NOCs
   useEffect(() => {
     const fetchNOCs = async () => {
+      setLoading(true);
       try {
         const queryString = yearFilter ? `?year=${yearFilter}&stage=DSW` : "?stage=DSW";
         const res = await fetch(`/api/dsw/nocs${queryString}`);
@@ -34,6 +36,7 @@ export default function DswNOCsPage() {
 
         if (!Array.isArray(data)) {
           setQueries([]);
+          setLoading(false);
           return;
         }
 
@@ -58,6 +61,8 @@ export default function DswNOCsPage() {
       } catch (error) {
         console.error(error);
         toast.error("Failed to load NOC applications", { position: "top-center" });
+      } finally {
+        setLoading(false);
       }
     };
     fetchNOCs();
@@ -95,7 +100,7 @@ export default function DswNOCsPage() {
       const res = await fetch(`/api/noc/${id}/approve`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "APPROVE" })
+        body: JSON.stringify({ action: "APPROVE" }),
       });
 
       const data = await res.json();
@@ -153,7 +158,6 @@ export default function DswNOCsPage() {
     <div className="max-w-7xl mx-auto p-4 sm:p-8">
       <Toaster />
 
-      {/* Hero Section */}
       <div className="text-center mb-8">
         <Typography variant="h4" className="font-bold text-indigo-700 mb-2">
           NOC Requests for DSW Approval
@@ -163,63 +167,175 @@ export default function DswNOCsPage() {
         </Typography>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center">
-        <FormControl className="w-full sm:w-1/3">
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <MenuItem value="All">All</MenuItem>
-            <MenuItem value="PENDING">Pending</MenuItem>
-            <MenuItem value="APPROVED">Approved</MenuItem>
-            <MenuItem value="REJECTED">Rejected</MenuItem>
-          </Select>
-        </FormControl>
+      {/* Loading */}
+      {loading ? (
+        <div className="text-center text-gray-600 text-lg">
+          NOC applications are loading...
+        </div>
+      ) : queries.length === 0 ? (
+        <div className="text-center text-gray-600 text-lg">
+          No NOC applications from students
+        </div>
+      ) : (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center">
+            <FormControl className="w-full sm:w-1/3">
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="All">All</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="APPROVED">Approved</MenuItem>
+                <MenuItem value="REJECTED">Rejected</MenuItem>
+              </Select>
+            </FormControl>
 
-        <FormControl className="w-full sm:w-1/3">
-          <InputLabel>Year</InputLabel>
-          <Select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-          >
-            <MenuItem value="">All Years</MenuItem>
-            <MenuItem value="E1">1st Year</MenuItem>
-            <MenuItem value="E2">2nd Year</MenuItem>
-            <MenuItem value="E3">3rd Year</MenuItem>
-            <MenuItem value="E4">4th Year</MenuItem>
-          </Select>
-        </FormControl>
-      </div>
+            <FormControl className="w-full sm:w-1/3">
+              <InputLabel>Year</InputLabel>
+              <Select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+              >
+                <MenuItem value="">All Years</MenuItem>
+                <MenuItem value="E1">1st Year</MenuItem>
+                <MenuItem value="E2">2nd Year</MenuItem>
+                <MenuItem value="E3">3rd Year</MenuItem>
+                <MenuItem value="E4">4th Year</MenuItem>
+              </Select>
+            </FormControl>
+          </div>
+         {/* Show message if no NOCs */}
+          {filteredQueries.length === 0 && (
+            <div className="text-center text-gray-900 font-medium mt-4">
+              No NOC applications found
+            </div>
+          )}
 
-      {/* Desktop Table */}
-      <div className="overflow-x-auto hidden sm:block">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-indigo-200 text-indigo-900 font-semibold">
-              <th className="p-3 border">Student</th>
-              <th className="p-3 border">Student ID</th>
-              <th className="p-3 border">Email</th>
-              <th className="p-3 border">Branch</th>
-              <th className="p-3 border">Year</th>
-              <th className="p-3 border">Reason</th>
-              <th className="p-3 border">Document</th>
-              <th className="p-3 border">DSW Status</th>
-              <th className="p-3 border">Rejection Reason</th>
-              <th className="p-3 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+          {/* Desktop Table */}
+          {filteredQueries.length>0 &&<div className="overflow-x-auto hidden sm:block">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-indigo-200 text-indigo-900 font-semibold">
+                  <th className="p-3 border">Student</th>
+                  <th className="p-3 border">Student ID</th>
+                  <th className="p-3 border">Email</th>
+                  <th className="p-3 border">Branch</th>
+                  <th className="p-3 border">Year</th>
+                  <th className="p-3 border">Reason</th>
+                  <th className="p-3 border">Document</th>
+                  <th className="p-3 border">DSW Status</th>
+                  <th className="p-3 border">Rejection Reason</th>
+                  <th className="p-3 border">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredQueries.map((q) => (
+                  <tr key={q.id} className="hover:bg-gray-50 text-gray-800">
+                    <td className="p-3 border">{q.student}</td>
+                    <td className="p-3 border">{q.studentId}</td>
+                    <td className="p-3 border">{q.collegeEmail}</td>
+                    <td className="p-3 border">{q.branch}</td>
+                    <td className="p-3 border">{q.year}</td>
+                    <td className="p-3 border">{q.reason}</td>
+                    <td className="p-3 border">
+                      {q.documentUrl ? (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() =>
+                            window.open(`/api/noc/${q.documentUrl}/proof`, "_blank")
+                          }
+                        >
+                          View Document
+                        </Button>
+                      ) : (
+                        <span className="text-gray-500">No document</span>
+                      )}
+                    </td>
+                    <td className="p-3 border">
+                      <Chip label={q.status} color={getStatusColor(q.status)} />
+                    </td>
+                    <td className="p-3 border text-red-600">
+                      {q.status === "REJECTED" ? q.rejectReason || "No reason given" : "-"}
+                    </td>
+                    <td className="p-3 border">
+                      {q.status === "PENDING" && (
+                        <div className="flex gap-3">
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            onClick={() => handleApprove(q.id)}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            onClick={() => handleReject(q.id)}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          }
+
+          
+          
+          {/* Mobile Cards */}
+          <div className="sm:hidden flex flex-col gap-4">
             {filteredQueries.map((q) => (
-              <tr key={q.id} className="hover:bg-gray-50 text-gray-800">
-                <td className="p-3 border">{q.student}</td>
-                <td className="p-3 border">{q.studentId}</td>
-                <td className="p-3 border">{q.collegeEmail}</td>
-                <td className="p-3 border">{q.branch}</td>
-                <td className="p-3 border">{q.year}</td>
-                <td className="p-3 border">{q.reason}</td>
-                <td className="p-3 border">
+              <div
+                key={q.id}
+                className="border rounded-lg shadow-md p-4 bg-white"
+              >
+                {/* Status top */}
+                <div className="flex justify-between items-center mb-3">
+                  <Typography
+                    variant="subtitle1"
+                    className="font-semibold text-gray-900"
+                  >
+                    DSW Status
+                  </Typography>
+                  <Chip label={q.status} color={getStatusColor(q.status)} size="small" />
+                </div>
+
+                {/* Fields in single line */}
+                <Typography variant="body2" className="text-gray-900 mb-1">
+                  <strong>Name:</strong> {q.student}
+                </Typography>
+                <Typography variant="body2" className="text-gray-900 mb-1">
+                  <strong>ID:</strong> {q.studentId}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  className="text-gray-900 mb-1 truncate"
+                  title={q.collegeEmail}
+                >
+                  <strong>Email:</strong> {q.collegeEmail}
+                </Typography>
+                <Typography variant="body2" className="text-gray-900 mb-1">
+                  <strong>Branch & Year:</strong> {q.branch} - {q.year}
+                </Typography>
+                <Typography variant="body2" className="text-gray-900 mb-1">
+                  <strong>Reason:</strong> {q.reason}
+                </Typography>
+
+                {/* Document on the same line */}
+                <div className="flex justify-between items-center mb-2">
+                  <Typography variant="body2" className="text-gray-900">
+                    <strong>Document:</strong>
+                  </Typography>
                   {q.documentUrl ? (
                     <Button
                       variant="outlined"
@@ -228,45 +344,53 @@ export default function DswNOCsPage() {
                         window.open(`/api/noc/${q.documentUrl}/proof`, "_blank")
                       }
                     >
-                      View Document
+                      View
                     </Button>
                   ) : (
-                    <span className="text-gray-500">No document</span>
+                    <span className="text-gray-600 text-sm">No document</span>
                   )}
-                </td>
-                <td className="p-3 border">
-                  <Chip label={q.status} color={getStatusColor(q.status)} />
-                </td>
-                <td className="p-3 border text-red-600">
-                  {q.status === "REJECTED" ? q.rejectReason || "No reason given" : "-"}
-                </td>
-                <td className="p-3 border">
-                  {q.status === "PENDING" && (
-                    <div className="flex gap-3">
-                      <Button
-                        variant="contained"
-                        color="success"
-                        size="small"
-                        onClick={() => handleApprove(q.id)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        onClick={() => handleReject(q.id)}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
-                </td>
-              </tr>
+                </div>
+
+                {/* Rejection Reason */}
+                {q.status === "REJECTED" && (
+                  <Typography
+                    variant="body2"
+                    className="text-red-600 mb-2"
+                  >
+                    <strong>Rejection Reason:</strong>{" "}
+                    {q.rejectReason || "No reason given"}
+                  </Typography>
+                )}
+
+                {/* Actions in same line if pending */}
+                {q.status === "PENDING" && (
+                  <div className="flex justify-end gap-2 mt-3">
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      onClick={() => handleApprove(q.id)}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      size="small"
+                      onClick={() => handleReject(q.id)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+
+
+
+        </>
+      )}
 
       {/* Rejection Modal */}
       <Modal
