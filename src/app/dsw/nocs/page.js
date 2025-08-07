@@ -130,7 +130,7 @@ export default function DswNOCsPage() {
       return;
     }
     try {
-      const res = await fetch(`/api/dsw/nocs/${selectedId}/reject`, {
+      const res = await fetch(`/api/nocs/${selectedId}/reject`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ remarks: rejectReason }),

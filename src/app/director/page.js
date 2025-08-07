@@ -13,7 +13,7 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import toast, { Toaster } from "react-hot-toast";
 
-export default function DswNOCsPage() {
+export default function DirectorNocs() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [queries, setQueries] = useState([]);
   const [yearFilter, setYearFilter] = useState("");
@@ -22,16 +22,14 @@ export default function DswNOCsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const role="HOD";
-  const branch="CSE";
 
-  // Fetch Hod Nocs By Branch Wise
+  // Fetch DSW NOCs
   useEffect(() => {
     const fetchNOCs = async () => {
       setLoading(true);
       try {
-        const queryString = yearFilter ? `?year=${yearFilter}&stage=HOD&branch=${branch}` : `?stage=DSW&branch=${branch}`;
-        const res = await fetch(`/api/hod/nocs${queryString}`);
+        const queryString = yearFilter ? `?year=${yearFilter}&stage=DIRECTOR` : "?stage=DIRECTOR";
+        const res = await fetch(`/api/dsw/nocs${queryString}`);
         if (!res.ok) throw new Error("Failed to fetch NOCs");
 
         const data = await res.json();
@@ -43,7 +41,7 @@ export default function DswNOCsPage() {
         }
 
         const formatted = data.map((noc) => {
-          const dswApproval = noc.approvals?.find((a) => a.stage === "HOD");
+          const dswApproval = noc.approvals?.find((a) => a.stage === "DIRECTOR");
           return {
             id: noc._id,
             student: noc.fullName,
@@ -68,7 +66,7 @@ export default function DswNOCsPage() {
       }
     };
     fetchNOCs();
-  }, [yearFilter,branch]);
+  }, [yearFilter]);
 
   // Filter + sort
   const filteredQueries = useMemo(() => {
@@ -132,7 +130,7 @@ export default function DswNOCsPage() {
       return;
     }
     try {
-      const res = await fetch(`/api/noc/${selectedId}/reject`, {
+      const res = await fetch(`/api/nocs/${selectedId}/reject`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ remarks: rejectReason }),
@@ -162,7 +160,7 @@ export default function DswNOCsPage() {
 
       <div className="text-center mb-8">
         <Typography variant="h4" className="font-bold text-indigo-700 mb-2">
-          NOC Requests for Hod Approval
+          Director Requests for DSW Approval
         </Typography>
         <Typography variant="body1" className="text-gray-600">
           Review and take action on NOC applications.
@@ -228,7 +226,7 @@ export default function DswNOCsPage() {
                   <th className="p-3 border">Year</th>
                   <th className="p-3 border">Reason</th>
                   <th className="p-3 border">Document</th>
-                  <th className="p-3 border">Hod status</th>
+                  <th className="p-3 border">DSW Status</th>
                   <th className="p-3 border">Rejection Reason</th>
                   <th className="p-3 border">Actions</th>
                 </tr>

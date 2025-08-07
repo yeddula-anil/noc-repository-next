@@ -1,8 +1,16 @@
+// app/api/verify-otp/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Otp from "../../../../models/Otp";
 import User from "../../../../models/User";
 import bcrypt from "bcryptjs";
+
+function determineRole(email) {
+  if (email.endsWith("@admin.com")) return "admin";
+  if (email.endsWith("@hod.com")) return "hod";
+  if (email.endsWith("@caretaker.com")) return "caretaker";
+  return "student";
+}
 
 export async function POST(req) {
   const { fullName, email, password, otp } = await req.json();
@@ -14,23 +22,22 @@ export async function POST(req) {
     return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
   }
 
-  // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return NextResponse.json({ error: "User already exists" }, { status: 400 });
   }
 
-  // Create user
   const hashedPassword = await bcrypt.hash(password, 10);
+  const role = determineRole(email);
+
   const newUser = await User.create({
     fullName,
     email,
     password: hashedPassword,
-    role: "student", // default role
+    role,
     verified: true,
   });
 
-  // Cleanup OTP
   await Otp.deleteMany({ email });
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
-import dbConnect from "../../../../../../lib/dbConnect";
-import Noc from "../../../../../../../models/Noc";
-import Message from "../../../../../../../models/Message";
+import dbConnect from "../../../../lib/dbConnect";
+import Noc from "../../../../../models/Noc";
+import Message from "../../../../../models/Message";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 

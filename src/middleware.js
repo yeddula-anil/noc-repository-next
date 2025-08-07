@@ -1,42 +1,43 @@
-import { withAuth } from "next-auth/middleware";
+// middleware.js
+import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default withAuth(
-  function middleware(req) {},
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const pathname = req.nextUrl.pathname;
+const protectedRoutes = {
+  "/admin": ["admin"],
+  "/hod": ["hod"],
+  "/caretaker": ["caretaker"],
+  "/student": ["student"],
+};
 
-        // ✅ Skip auth check for caretaker routes
-        if (pathname.startsWith("/caretaker")) {
-          return true;
-        }
+export async function middleware(req) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-        if (!token) return false;
+  const { pathname } = req.nextUrl;
 
-        // Student routes
-        if (pathname.startsWith("/student") && token.roles.includes("student")) return true;
-
-        // DSW routes
-        if (pathname.startsWith("/dsw")) return true;
-
-        // Dean routes
-        if (pathname.startsWith("/dean") && token.roles.includes("dean")) return true;
-
-        // Director routes
-        if (pathname.startsWith("/director") && token.roles.includes("director")) return true;
-
-        return false; // otherwise unauthorized
-      },
-    },
-    pages: {
-      signIn: "/auth/login",
-      error: "/unauthorized",
-    },
+  // Allow public paths
+  if (pathname === "/" || pathname.startsWith("/api") || pathname === "/signin" || pathname === "/signup") {
+    return NextResponse.next();
   }
-);
 
-// Protect only these folders
+  // No token -> redirect to signin
+  if (!token) {
+    return NextResponse.redirect(new URL("/signin", req.url));
+  }
+
+  // Role-based route check
+  for (const route in protectedRoutes) {
+    if (pathname.startsWith(route)) {
+      const allowedRoles = protectedRoutes[route];
+      if (!allowedRoles.includes(token.roles)) {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+    }
+  }
+
+  return NextResponse.next();
+}
+
+// Run middleware on these paths
 export const config = {
-  matcher: ["/student/:path*", "/caretaker/:path*", "/dsw/:path*", "/dean/:path*", "/director/:path*"],
+  matcher: ["/admin/:path*", "/hod/:path*", "/caretaker/:path*", "/student/:path*"],
 };

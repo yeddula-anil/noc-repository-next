@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import mongoose from "mongoose";
-import Otp from "../../../../models/Otp";
+import Otp from "../../../models/Otp";
 
 export async function POST(req) {
   const { email } = await req.json();
-
   await mongoose.connect(process.env.MONGODB_URI);
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // valid for 5 mins
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  await Otp.deleteMany({ email }); // remove old OTPs
+  await Otp.deleteMany({ email });
   await Otp.create({ email, otp, expiresAt });
 
   const transporter = nodemailer.createTransport({

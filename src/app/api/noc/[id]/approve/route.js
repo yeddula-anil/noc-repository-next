@@ -43,7 +43,7 @@ export async function PATCH(req, { params }) {
     let subject, content;
 
     if (action === "APPROVE") {
-      const stageOrder = ["CARETAKER", "DSW","HOD","FO_OFFICER", "DEAN", "DIRECTOR"];
+      const stageOrder = ["CARETAKER", "DSW","HOD","DEAN","FO_OFFICE", "DIRECTOR"];
       const nextStageIndex = stageOrder.indexOf(currentApproval.stage) + 1;
 
       if (nextStageIndex < stageOrder.length) {

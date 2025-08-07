@@ -1,83 +1,82 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+import GoogleProvider from "next-auth/providers/google";
+import User from "../../../../models/User";
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import clientPromise from "../../../lib/mongodb";
 
-export const authOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+function getRoleFromEmail(email) {
+  if (email.endsWith("@admin.com")) return "admin";
+  if (email.endsWith("@hod.com")) return "hod";
+  if (email.endsWith("@caretaker.com")) return "caretaker";
+  return "student";
+}
+
+const handler = NextAuth({
   providers: [
+    CredentialsProvider({
+      name: "credentials",
+      credentials: {
+        email: {},
+        password: {},
+      },
+      async authorize(credentials) {
+        await mongoose.connect(process.env.MONGODB_URI);
+        const user = await User.findOne({ email: credentials.email });
+        if (!user) throw new Error("No user found");
+
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) throw new Error("Invalid password");
+
+        return {
+          id: user._id,
+          email: user.email,
+          roles: user.role,
+        };
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          prompt: "select_account", // always ask account selection
+          prompt: "select_account", // Force account selection
         },
       },
-    }),
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        const client = await clientPromise;
-        const db = client.db("nocportal");
-        const user = await db.collection("users").findOne({ email: credentials.email });
-
-        console.log("Login attempt for:", credentials.email);
-        console.log("User found:", user);
+      async profile(profile) {
+        await mongoose.connect(process.env.MONGODB_URI);
+        let user = await User.findOne({ email: profile.email });
 
         if (!user) {
-          console.log("No user found");
-          return null;
+          const role = getRoleFromEmail(profile.email);
+          user = await User.create({
+            fullName: profile.name,
+            email: profile.email,
+            password: "",
+            role,
+            verified: true,
+          });
         }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        console.log("Password valid?", isValid);
-
-        if (!isValid) return null;
 
         return {
           id: user._id.toString(),
           email: user.email,
-          name: user.fullName,
-          roles: user.roles || ["student"],
+          roles: user.role,
         };
-      }
-
+      },
     }),
   ],
-
-  session: { strategy: "jwt" },
-
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      if (user) {
-        token.roles = user.roles || ["student"];
-      }
+    async jwt({ token, user }) {
+      if (user) token.roles = user.roles;
       return token;
     },
     async session({ session, token }) {
-      session.user.roles = token.roles || ["student"];
+      session.user.roles = token.roles;
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      // Check user role and redirect accordingly
-      if (url.startsWith("/")) url = `${baseUrl}${url}`;
-      return url;
-    },
   },
-
-  pages: {
-    signIn: "/auth/login", // custom login page
-  },
-
   secret: process.env.NEXTAUTH_SECRET,
-};
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
