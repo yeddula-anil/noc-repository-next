@@ -1,4 +1,5 @@
 import Message from "../../../../../models/Message";
+import dbConnect from "../../../../lib/dbConnect"
 export async function PATCH(req, { params }) {
   await dbConnect();
   const { messageId } =await params;

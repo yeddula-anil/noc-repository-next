@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import mongoose from "mongoose";
-import Otp from "../../../models/Otp";
+import dbConnect from "../../../lib/dbConnect";
+import Otp from "../../../../models/otp";
 
 export async function POST(req) {
   const { email } = await req.json();
-  await mongoose.connect(process.env.MONGODB_URI);
+  dbConnect()
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);

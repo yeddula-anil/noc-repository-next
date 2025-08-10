@@ -210,7 +210,7 @@ const ApplyNocPage = () => {
         {/* Proof */}
         <div>
           <label className="block font-semibold text-gray-800 mb-1">
-            Upload Proof Document (PDF Only)
+            Upload Proof Document (pdf sizeshould be less than 5mb)
           </label>
           <input
             type="file"

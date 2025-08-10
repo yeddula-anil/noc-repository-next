@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import { CircularProgress } from "@mui/material";
 
 const RoomIssueForm = () => {
   const [formData, setFormData] = useState({
     fullName: "",
-    email:"",
+    email: "",
     studentId: "",
     roomNo: "",
     hostel: "",
@@ -17,14 +18,16 @@ const RoomIssueForm = () => {
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState(""); // dynamic message
   const [snackbarColor, setSnackbarColor] = useState("bg-green-600"); // dynamic color
+  const [loading, setLoading] = useState(false); // new loading state
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     console.log("📤 Sending data:", formData);
 
     try {
@@ -42,6 +45,7 @@ const RoomIssueForm = () => {
         setSnackbarColor("bg-red-600");
         setShowSnackbar(true);
         setTimeout(() => setShowSnackbar(false), 3000);
+        setLoading(false);
         return;
       }
 
@@ -67,15 +71,14 @@ const RoomIssueForm = () => {
       setSnackbarColor("bg-red-600");
       setShowSnackbar(true);
       setTimeout(() => setShowSnackbar(false), 3000);
+    } finally {
+      setLoading(false);
     }
   };
 
-
   return (
     <div className="relative bg-white p-6 rounded-lg shadow-md max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-indigo-600 mb-6">
-        Report Room Issue
-      </h1>
+      <h1 className="text-2xl font-bold text-indigo-600 mb-6">Report Room Issue</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Full Name */}
@@ -90,7 +93,8 @@ const RoomIssueForm = () => {
             className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        {/*student email */}
+
+        {/* College Mail */}
         <div>
           <label className="block font-semibold text-gray-800 mb-1">College Mail</label>
           <input
@@ -195,9 +199,7 @@ const RoomIssueForm = () => {
 
         {/* Description */}
         <div>
-          <label className="block font-semibold text-gray-800 mb-1">
-            Issue Description
-          </label>
+          <label className="block font-semibold text-gray-800 mb-1">Issue Description</label>
           <textarea
             name="description"
             value={formData.description}
@@ -206,15 +208,20 @@ const RoomIssueForm = () => {
             rows="3"
             placeholder="Describe your issue in detail..."
             className="w-full border text-gray-800 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
-          ></textarea>
+          />
         </div>
 
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition disabled:opacity-60 flex justify-center items-center"
         >
-          Submit Request
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Submit Request"
+          )}
         </button>
       </form>
 

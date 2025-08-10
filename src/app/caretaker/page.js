@@ -1,5 +1,7 @@
 "use client";
-import { useState, useMemo } from "react";
+
+import { useState, useEffect, useMemo } from "react";
+import toast from "react-hot-toast"; // react-hot-toast for notifications
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -7,107 +9,84 @@ import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Chip from "@mui/material/Chip";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
+import CircularProgress from "@mui/material/CircularProgress";
 
 export default function CaretakerHostelQueriesPage() {
   const [statusFilter, setStatusFilter] = useState("All");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [yearFilter, setYearFilter] = useState("All");
+  const [queries, setQueries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [approveLoadingId, setApproveLoadingId] = useState(null);
 
-  // Dummy hostel queries
-  const [queries, setQueries] = useState([
-    {
-      id: "H001",
-      student: "Vikas Yeddula",
-      roomNo: "B-101",
-      issue: "Fan not working",
-      description: "Ceiling fan not rotating properly",
-      status: "Pending",
-      timestamp: "2025-08-02T09:00:00",
-    },
-    {
-      id: "H002",
-      student: "Rahul Verma",
-      roomNo: "C-202",
-      issue: "Carpentry work",
-      description: "Bed frame needs repair",
-      status: "Resolved",
-      timestamp: "2025-08-01T14:30:00",
-    },
-    {
-      id: "H003",
-      student: "Meena Gupta",
-      roomNo: "A-105",
-      issue: "Light not working",
-      description: "Tube light fused in study area",
-      status: "Approved",
-      timestamp: "2025-08-01T10:15:00",
-    },
-  ]);
+  useEffect(() => {
+    async function fetchQueries() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (statusFilter !== "All") params.append("status", statusFilter);
+        if (yearFilter !== "All") params.append("year", yearFilter);
 
-  // Apply filter + sort
-  const filteredQueries = useMemo(() => {
-    let filtered = queries;
-    if (statusFilter !== "All") {
-      filtered = filtered.filter((q) => q.status === statusFilter);
+        const res = await fetch("/api/room-issue?" + params.toString());
+        if (!res.ok) throw new Error("Failed to fetch");
+
+        const data = await res.json();
+        setQueries(data);
+      } catch (err) {
+        console.error("Error fetching queries:", err);
+        setQueries([]);
+      } finally {
+        setLoading(false);
+      }
     }
-    return filtered.sort((a, b) =>
-      sortOrder === "desc"
-        ? new Date(b.timestamp) - new Date(a.timestamp)
-        : new Date(a.timestamp) - new Date(b.timestamp)
+    fetchQueries();
+  }, [statusFilter, yearFilter]);
+
+  const filteredSortedQueries = useMemo(() => {
+    return [...queries].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
     );
-  }, [statusFilter, sortOrder, queries]);
+  }, [queries]);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Resolved":
+      case "RESOLVED":
         return "success";
-      case "Approved":
+      case "APPROVED":
         return "primary";
-      case "Pending":
+      case "PENDING":
         return "warning";
       default:
         return "default";
     }
   };
 
-  // Handle Approve
-  const handleApprove = (id) => {
-    setQueries((prev) =>
-      prev.map((q) =>
-        q.id === id ? { ...q, status: "Approved" } : q
-      )
-    );
-  };
+  const handleApprove = async (id) => {
+    setApproveLoadingId(id);
+    try {
+      const res = await fetch(`/api/room-issue/approve/${id}`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to approve");
 
-  // Export to Excel
-  const handleDownloadExcel = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Hostel Queries");
+      // Update the query status immediately in local state
+      setQueries((prev) =>
+        prev.map((q) => (q._id === id ? { ...q, status: "APPROVED" } : q))
+      );
 
-    worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
-      { header: "Student", key: "student", width: 20 },
-      { header: "Room No", key: "roomNo", width: 10 },
-      { header: "Issue", key: "issue", width: 20 },
-      { header: "Description", key: "description", width: 30 },
-      { header: "Status", key: "status", width: 12 },
-      { header: "Timestamp", key: "timestamp", width: 20 },
-    ];
-
-    filteredQueries.forEach((q) => {
-      worksheet.addRow(q);
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(
-      new Blob([buffer], { type: "application/octet-stream" }),
-      "hostel_queries.xlsx"
-    );
+      toast.success("Issue approved successfully!");
+    } catch (error) {
+      console.error("Approve error:", error);
+      toast.error("Failed to approve issue.");
+    } finally {
+      setApproveLoadingId(null);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-8">
+    <div
+      className="max-w-7xl mx-auto p-4 sm:p-8 relative"
+      style={{ position: "relative" }}
+    >
       {/* Hero Section */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <div className="text-center sm:text-left">
@@ -118,14 +97,6 @@ export default function CaretakerHostelQueriesPage() {
             Manage student hostel-related issues in real-time.
           </Typography>
         </div>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleDownloadExcel}
-          className="mt-4 sm:mt-0"
-        >
-          Download Excel
-        </Button>
       </div>
 
       {/* Filters */}
@@ -144,13 +115,16 @@ export default function CaretakerHostelQueriesPage() {
         </FormControl>
 
         <FormControl className="w-full sm:w-1/3">
-          <InputLabel>Sort By</InputLabel>
+          <InputLabel>Year</InputLabel>
           <Select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
           >
-            <MenuItem value="desc">Newest First</MenuItem>
-            <MenuItem value="asc">Oldest First</MenuItem>
+            <MenuItem value="All">All</MenuItem>
+            <MenuItem value="E1">1st Year</MenuItem>
+            <MenuItem value="E2">2nd Year</MenuItem>
+            <MenuItem value="E3">3rd Year</MenuItem>
+            <MenuItem value="E4">4th Year</MenuItem>
           </Select>
         </FormControl>
       </div>
@@ -163,6 +137,7 @@ export default function CaretakerHostelQueriesPage() {
               <th className="p-3 border">ID</th>
               <th className="p-3 border">Name</th>
               <th className="p-3 border">Room No</th>
+              <th className="p-3 border">Mobile No</th>
               <th className="p-3 border">Issue</th>
               <th className="p-3 border">Description</th>
               <th className="p-3 border">Status</th>
@@ -171,71 +146,114 @@ export default function CaretakerHostelQueriesPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredQueries.map((q) => (
-              <tr key={q.id} className="hover:bg-gray-50 text-gray-800">
-                <td className="p-3 border">{q.id}</td>
-                <td className="p-3 border">{q.student}</td>
-                <td className="p-3 border">{q.roomNo}</td>
-                <td className="p-3 border">{q.issue}</td>
-                <td className="p-3 border">{q.description}</td>
-                <td className="p-3 border">
-                  <Chip label={q.status} color={getStatusColor(q.status)} />
-                </td>
-                <td className="p-3 border">
-                  {new Date(q.timestamp).toLocaleString()}
-                </td>
-                <td className="p-3 border">
-                  {q.status === "Pending" && (
-                    <Button
-                      variant="contained"
-                      color="success"
-                      size="small"
-                      onClick={() => handleApprove(q.id)}
-                    >
-                      Approve
-                    </Button>
-                  )}
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center p-6">
+                  Loading...
                 </td>
               </tr>
-            ))}
+            ) : filteredSortedQueries.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="text-center p-6">
+                  No queries found.
+                </td>
+              </tr>
+            ) : (
+              filteredSortedQueries.map((q) => (
+                <tr key={q._id} className="hover:bg-gray-50 text-gray-800">
+                  <td className="p-3 border">{q.studentId}</td>
+                  <td className="p-3 border">{q.fullName}</td>
+                  <td className="p-3 border">{q.roomNo}</td>
+                  <td className="p-3 border">{q.mobileNo}</td>
+                  <td className="p-3 border">{q.issueType}</td>
+                  <td className="p-3 border">{q.description}</td>
+                  <td className="p-3 border">
+                    <Chip label={q.status} color={getStatusColor(q.status)} />
+                  </td>
+                  <td className="p-3 border">
+                    {new Date(q.createdAt).toLocaleString()}
+                  </td>
+                  <td className="p-3 border">
+                    {q.status === "PENDING" && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        size="small"
+                        disabled={approveLoadingId === q._id}
+                        onClick={() => handleApprove(q._id)}
+                      >
+                        {approveLoadingId === q._id ? (
+                          <CircularProgress size={20} color="inherit" />
+                        ) : (
+                          "Approve"
+                        )}
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 
         {/* Mobile Cards */}
         <div className="grid gap-5 sm:hidden">
-          {filteredQueries.map((q) => (
-            <div key={q.id} className="border rounded-lg p-4 shadow-md bg-white">
-              <Typography className="font-semibold text-indigo-800">
-                {q.student}
-              </Typography>
-              <Typography variant="body2" className="text-gray-700">
-                Room: {q.roomNo}
-              </Typography>
-              <Typography variant="body2" className="text-gray-700">
-                Issue: {q.issue}
-              </Typography>
-              <Typography variant="body2" className="text-gray-600">
-                {q.description}
-              </Typography>
-              <div className="mt-2 flex justify-between items-center">
-                <Chip label={q.status} color={getStatusColor(q.status)} />
-                <Typography variant="caption" className="text-gray-500">
-                  {new Date(q.timestamp).toLocaleString()}
+          {loading ? (
+            <div className="text-center p-6">Loading...</div>
+          ) : filteredSortedQueries.length === 0 ? (
+            <div className="text-center p-6">No queries found.</div>
+          ) : (
+            filteredSortedQueries.map((q) => (
+              <div
+                key={q._id}
+                className="relative border rounded-lg p-4 shadow-md bg-white flex flex-col"
+              >
+                {/* Status chip top-right */}
+                <div className="absolute top-3 right-3">
+                  <Chip label={q.status} color={getStatusColor(q.status)} />
+                </div>
+
+                <Typography className="font-semibold text-indigo-800">
+                  {q.fullName}
                 </Typography>
-              </div>
-              {q.status === "Pending" && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  size="small"
-                  className="mt-5"
-                  onClick={() => handleApprove(q.id)}
+                <Typography variant="body2" className="text-gray-700">
+                  Room: {q.roomNo}
+                </Typography>
+                <Typography variant="body2" className="text-gray-700">
+                  Mobile: {q.mobileNo}
+                </Typography>
+                <Typography variant="body2" className="text-gray-700">
+                  Issue: {q.issueType}
+                </Typography>
+                <Typography variant="body2" className="text-gray-600">
+                  {q.description}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  className="text-gray-500 mt-2 self-end"
                 >
-                  Approve
-                </Button>
-              )}
-            </div>
-          ))}
+                  {new Date(q.createdAt).toLocaleString()}
+                </Typography>
+
+                {q.status === "PENDING" && (
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    className="mt-4 self-start px-3 py-1 text-sm"
+                    disabled={approveLoadingId === q._id}
+                    onClick={() => handleApprove(q._id)}
+                  >
+                    {approveLoadingId === q._id ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      "Approve"
+                    )}
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

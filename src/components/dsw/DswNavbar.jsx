@@ -8,15 +8,22 @@ import {
   Modal,
   Box,
   useMediaQuery,
+  Collapse,
+  List,
+  ListItemButton,
+  ListItemText,
 } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "@mui/material/styles";
+import { signOut } from "next-auth/react";
 
 export default function CaretakerNavbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
@@ -28,64 +35,117 @@ export default function CaretakerNavbar() {
     phone: "9876543210",
     role: "Caretaker",
     hostel: "BH-1",
+    profilePic: "", // put image URL here for testing
   };
 
   const handleLogout = () => {
-    console.log("Logged out");
-    router.push("/login");
+    signOut({ redirect: true, callbackUrl: "/" });
   };
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/dsw/edit-profile");
     } else {
       setOpen(true);
     }
   };
 
+  const navItems = [
+    { label: "NOCs", path: "/dsw/nocs" }
+    
+  ];
+
   return (
     <>
       <AppBar position="static" sx={{ backgroundColor: "#3f51b5" }}>
         <Toolbar>
-          {/* Profile Icon on Left */}
+          {/* Profile Icon on Left - Increased size */}
           <IconButton
             edge="start"
             color="inherit"
             aria-label="profile"
-            sx={{ mr: 2 }}
+            sx={{ mr: 2, width: 56, height: 56 }}
             onClick={handleProfileClick}
           >
-            <AccountCircleIcon />
+            {user.profilePic ? (
+              <img
+                src={user.profilePic}
+                alt="Profile"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <AccountCircleIcon sx={{ fontSize: 56 }} />
+            )}
           </IconButton>
 
           {/* Spacer */}
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            DSW Dashboard
+            DSW DASHBOARD
           </Typography>
 
           {/* Navbar Options */}
-          <Button color="inherit" onClick={() => router.push("/caretaker/nocs")}>
-            NOCs
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => router.push("/caretaker/outpasses")}
-          >
-            Outpasses
-          </Button>
-          <Button
-            color="inherit"
-            onClick={() => router.push("/caretaker/hostel-queries")}
-          >
-            Hostel Queries
-          </Button>
+          {isSmallScreen ? (
+            <>
+              <IconButton
+                color="inherit"
+                edge="end"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                aria-label="toggle menu"
+              >
+                <MenuIcon />
+              </IconButton>
+            </>
+          ) : (
+            navItems.map((item) => (
+              <Button
+                key={item.label}
+                color="inherit"
+                onClick={() => router.push(item.path)}
+              >
+                {item.label}
+              </Button>
+            ))
+          )}
         </Toolbar>
       </AppBar>
+
+      {/* Collapsible menu below navbar for mobile */}
+      {isSmallScreen && (
+        <Collapse in={menuOpen} timeout="auto" unmountOnExit>
+          <Box
+            sx={{
+              bgcolor: "black",
+              display: "flex",
+              flexDirection: "column",
+              px: 2,
+            }}
+          >
+            {navItems.map((item) => (
+              <Button
+                key={item.label}
+                color="inherit"
+                sx={{ justifyContent: "flex-start", py: 1 }}
+                onClick={() => {
+                  router.push(item.path);
+                  setMenuOpen(false);
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </Box>
+        </Collapse>
+      )}
 
       {/* Profile Modal */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <Box
-            sx={{
+          sx={{
             position: "absolute",
             top: 20,
             left: 20,
@@ -98,9 +158,9 @@ export default function CaretakerNavbar() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            }}
+          }}
         >
-          {/* Profile Icon at Top Center */}
+          {/* Profile Image or Icon */}
           <label htmlFor="profile-pic-upload">
             <IconButton
               component="span"
@@ -108,11 +168,25 @@ export default function CaretakerNavbar() {
                 bgcolor: "#e8eaf6",
                 mb: 2,
                 "&:hover": { bgcolor: "#c5cae9" },
-                width: 110,
-                height: 110,
+                width: 130,
+                height: 130,
+                overflow: "hidden",
               }}
             >
-              <AccountCircleIcon sx={{ fontSize: 80, color: "#3f51b5" }} />
+              {user.profilePic ? (
+                <img
+                  src={user.profilePic}
+                  alt="Profile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <AccountCircleIcon sx={{ fontSize: 80, color: "#3f51b5" }} />
+              )}
             </IconButton>
           </label>
           <input

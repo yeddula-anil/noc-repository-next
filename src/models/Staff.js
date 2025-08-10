@@ -1,37 +1,18 @@
 // models/Staff.js
 import mongoose from "mongoose";
 
-const StaffSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
+const StaffSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String },
+    role: { type: String, enum: ["HOD", "CARETAKER","DEAN","FO_OFFICE","DSW","DIRECTOR"], required: true },
+    branch: { type: String }, // Only applicable for HOD
+    year: { type: String },   // Only applicable for Caretaker
+    profilePic: { type: String }, // URL or base64
+    profilePicBuffer: { type: Buffer },
   },
-  name: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    enum: ["CARETAKER", "DSW", "HOD", "DEAN", "FO_OFFICE", "DIRECTOR"],
-    required: true,
-  },
-  branch: {
-    type: String,
-    required: function () {
-      return this.role === "HOD";
-    },
-  },
-  year: {
-    type: String,
-    required: function () {
-      return this.role === "CARETAKER";
-    },
-  },
-  profilePic: {
-    data: Buffer,
-    contentType: String,
-  },
-});
+  { timestamps: true }
+);
 
 export default mongoose.models.Staff || mongoose.model("Staff", StaffSchema);

@@ -1,15 +1,15 @@
 // app/api/verify-otp/route.js
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import Otp from "../../../../models/Otp";
+import Otp from "../../../../models/otp";
 import User from "../../../../models/User";
 import bcrypt from "bcryptjs";
 
 function determineRole(email) {
-  if (email.endsWith("@admin.com")) return "admin";
-  if (email.endsWith("@hod.com")) return "hod";
-  if (email.endsWith("@caretaker.com")) return "caretaker";
-  return "student";
+  if (email.endsWith("@rguktrkv.ac.in")) return "STUDENT";
+  if (email.startsWith("vikasyeddula")) return "CARETAKER";
+  if (email.endsWith("@caretaker.com")) return "DEAN";
+  return "STUDENT";
 }
 
 export async function POST(req) {

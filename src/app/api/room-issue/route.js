@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
+import dbConnect from "../../lib/dbConnect";
 import RoomIssue from "../../../models/RoomIssue";
 
 export async function POST(req) {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    dbConnect()
 
     const data = await req.json();
     console.log("📌 Received data:", data);
@@ -36,6 +36,32 @@ export async function POST(req) {
     console.error("🔥 Error saving room issue:", error.message);
     return NextResponse.json(
       { error: error.message || "Failed to submit room issue" },
+      { status: 500 }
+    );
+  }
+}
+
+//get method
+export async function GET(req) {
+  try {
+    dbConnect()
+
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status") || "All";
+    const year = searchParams.get("year") || "All";
+
+    const filter = {};
+    if (status !== "All") filter.status = status;
+    if (year !== "All") filter.year = year; // keep as string
+
+    // Fetch and sort by oldest first (ascending timestamp)
+    const queries = await RoomIssue.find(filter).sort({ timestamp: 1 });
+
+    return NextResponse.json(queries);
+  } catch (error) {
+    console.error("🔥 Error fetching hostel queries:", error.message);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch hostel queries" },
       { status: 500 }
     );
   }

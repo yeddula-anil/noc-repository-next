@@ -6,10 +6,10 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 function getRoleFromEmail(email) {
-  if (email.endsWith("@admin.com")) return "admin";
-  if (email.endsWith("@hod.com")) return "hod";
-  if (email.endsWith("@caretaker.com")) return "caretaker";
-  return "student";
+  if (email.endsWith("@rguktrkv.ac.in")) return "DSW";
+  if (email.startsWith("vikasyeddula")) return "CARETAKER";
+  if (email.endsWith("@caretaker.com")) return "DEAN";
+  return "STUDENT";
 }
 
 const handler = NextAuth({
@@ -29,9 +29,9 @@ const handler = NextAuth({
         if (!isValid) throw new Error("Invalid password");
 
         return {
-          id: user._id,
+          id: user._id.toString(),
           email: user.email,
-          roles: user.role,
+          role: user.role,
         };
       },
     }),
@@ -40,7 +40,7 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          prompt: "select_account", // Force account selection
+          prompt: "select_account",
         },
       },
       async profile(profile) {
@@ -58,21 +58,22 @@ const handler = NextAuth({
           });
         }
 
+        // Ensure role is always returned (either from DB or new user)
         return {
           id: user._id.toString(),
           email: user.email,
-          roles: user.role,
+          role: user.role || getRoleFromEmail(user.email),
         };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.roles = user.roles;
+      if (user) token.role = user.role; // Persist role in token
       return token;
     },
     async session({ session, token }) {
-      session.user.roles = token.roles;
+      session.user.role = token.role; // Expose role in session
       return session;
     },
   },

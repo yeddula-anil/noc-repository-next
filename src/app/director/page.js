@@ -160,7 +160,7 @@ export default function DirectorNocs() {
 
       <div className="text-center mb-8">
         <Typography variant="h4" className="font-bold text-indigo-700 mb-2">
-          Director Requests for DSW Approval
+          Student Noc requests for Director Approval
         </Typography>
         <Typography variant="body1" className="text-gray-600">
           Review and take action on NOC applications.
@@ -305,7 +305,7 @@ export default function DirectorNocs() {
                     variant="subtitle1"
                     className="font-semibold text-gray-900"
                   >
-                    DSW Status
+                    Director status
                   </Typography>
                   <Chip label={q.status} color={getStatusColor(q.status)} size="small" />
                 </div>

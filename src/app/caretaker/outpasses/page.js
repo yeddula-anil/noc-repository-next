@@ -19,6 +19,7 @@ export default function CaretakerOutpassesPage() {
   const [openModal, setOpenModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+  
 
   // Fetch outpasses from backend (default year = E3 for now)
   useEffect(() => {
