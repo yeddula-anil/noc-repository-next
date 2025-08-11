@@ -8,8 +8,9 @@ export default function DirectorLayout({ children }) {
     <div className="bg-gray-100 min-h-screen">
       <StaffProvider>
         <DirectorNavbar />
+        <main className="max-w-7xl mx-auto p-4">{children}</main>
       </StaffProvider>
-      <main className="max-w-7xl mx-auto p-4">{children}</main>
+      
     </div>
   );
 }
