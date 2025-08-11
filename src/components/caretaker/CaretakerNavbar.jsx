@@ -40,7 +40,7 @@ export default function CaretakerNavbar() {
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/caretaker/edit-profile");
     } else {
       setOpen(true);
     }
@@ -126,7 +126,7 @@ export default function CaretakerNavbar() {
         <Collapse in={menuOpen} timeout="auto" unmountOnExit>
           <Box
             sx={{
-              bgcolor: "black",
+              bgcolor: "blue",
               display: "flex",
               flexDirection: "column",
               px: 2,
