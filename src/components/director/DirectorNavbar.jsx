@@ -60,7 +60,7 @@ export default function DirectorNavbar() {
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/director/edit-profile");
     } else {
       setOpen(true);
     }

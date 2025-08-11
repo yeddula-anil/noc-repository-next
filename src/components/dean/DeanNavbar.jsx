@@ -60,7 +60,7 @@ export default function DeanNavbar() {
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/dean/edit-profile");
     } else {
       setOpen(true);
     }

@@ -40,7 +40,7 @@ export default function HodNavbar() {
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/hod/edit-profile");
     } else {
       setOpen(true);
     }

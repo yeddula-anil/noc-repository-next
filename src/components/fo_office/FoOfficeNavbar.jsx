@@ -60,7 +60,7 @@ export default function FoNavbar() {
 
   const handleProfileClick = () => {
     if (isSmallScreen) {
-      router.push("/caretaker/profile");
+      router.push("/foOffice/edit-profile");
     } else {
       setOpen(true);
     }
