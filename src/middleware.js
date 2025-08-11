@@ -24,8 +24,9 @@ export async function middleware(req) {
       return NextResponse.redirect(new URL("/caretaker", req.url));
     } else if (role === "HOD") {
       return NextResponse.redirect(new URL("/hod", req.url));
-    // else if (role === "STUDENT") {
-    //   return NextResponse.redirect(new URL("/student", req.url));
+    }
+    else if (role === "STUDENT") {
+      return NextResponse.redirect(new URL("/student", req.url));
     } else {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
