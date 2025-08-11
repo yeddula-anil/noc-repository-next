@@ -15,6 +15,8 @@ export async function middleware(req) {
 
   // 1. Redirect from "/" based on role if logged in
   if (pathname === "/") {
+    console.log("Token inside middleware:", token);
+
     if (!token) {
       return NextResponse.next();
     }
