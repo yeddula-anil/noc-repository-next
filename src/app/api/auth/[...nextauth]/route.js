@@ -31,8 +31,9 @@ const handler = NextAuth({
         return {
           id: user._id.toString(),
           email: user.email,
-          role: user.role,
+          role: user.role || getRoleFromEmail(user.email),
         };
+
       },
     }),
     GoogleProvider({
