@@ -35,10 +35,8 @@ export async function middleware(req) {
   if (
     pathname.startsWith("/api") ||
     pathname === "/signin" ||
-    pathname === "/signup" || 
-    pathname === "/fo_office" ||
-    pathname === "/dean" ||
-    pathname === "/director" 
+    pathname === "/signup"
+    
     
   ) {
     return NextResponse.next();

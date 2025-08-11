@@ -91,7 +91,7 @@ export default function CaretakerHostelQueriesPage() {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <div className="text-center sm:text-left">
           <Typography variant="h4" className="font-bold text-indigo-700 mb-2">
-            Hostel Queries Dashboard
+            Hostel reolated problems
           </Typography>
           <Typography variant="body1" className="text-gray-700">
             Manage student hostel-related issues in real-time.

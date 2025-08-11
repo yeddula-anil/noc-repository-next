@@ -12,6 +12,7 @@ import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import toast, { Toaster } from "react-hot-toast";
+import { useStaff } from "../context/StaffContext";
 
 export default function DswNOCsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
@@ -22,8 +23,9 @@ export default function DswNOCsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const {staff}=useStaff()
   const role="HOD";
-  const branch="CSE";
+  const branch=staff?.branch;
 
   // Fetch Hod Nocs By Branch Wise
   useEffect(() => {

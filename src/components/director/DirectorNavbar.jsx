@@ -31,7 +31,7 @@ export default function DirectorNavbar() {
 
   const email = session?.user?.email;
 
-  // Fetch staff profile based on email
+  // Fetch staff profile when email is available
   useEffect(() => {
     if (!email) return;
 
@@ -66,13 +66,11 @@ export default function DirectorNavbar() {
     }
   };
 
- 
-
   return (
     <>
       <AppBar position="static" sx={{ backgroundColor: "#3f51b5" }}>
         <Toolbar>
-          {/* Profile Icon and "my-profile" label */}
+          {/* Profile Icon and Label */}
           <Box
             onClick={handleProfileClick}
             sx={{
@@ -81,6 +79,7 @@ export default function DirectorNavbar() {
               cursor: "pointer",
               mr: 2,
               gap: 1,
+              userSelect: "none",
             }}
           >
             {staff?.profilePic ? (
@@ -100,7 +99,7 @@ export default function DirectorNavbar() {
             )}
             <Typography
               variant="subtitle1"
-              sx={{ color: "white", fontWeight: "bold", userSelect: "none" }}
+              sx={{ color: "white", fontWeight: "bold" }}
             >
               my-profile
             </Typography>
@@ -111,47 +110,9 @@ export default function DirectorNavbar() {
             Director Dashboard
           </Typography>
 
-          {/* Navbar Options */}
-          {isSmallScreen ? (
-            <>
-              <IconButton
-                color="inherit"
-                edge="end"
-                onClick={() => setMenuOpen((prev) => !prev)}
-                aria-label="toggle menu"
-              >
-                <MenuIcon />
-              </IconButton>
-            </>
-          ) : (
-            navItems.map((item) => (
-              <Button
-                key={item.label}
-                color="inherit"
-                onClick={() => router.push(item.path)}
-              >
-                {item.label}
-              </Button>
-            ))
-          )}
+          {/* Add Navbar options here if needed */}
         </Toolbar>
       </AppBar>
-
-      {/* Collapsible menu below navbar for mobile */}
-      {isSmallScreen && (
-        <Collapse in={menuOpen} timeout="auto" unmountOnExit>
-          <Box
-            sx={{
-              bgcolor: "black",
-              display: "flex",
-              flexDirection: "column",
-              px: 2,
-            }}
-          >
-          
-          </Box>
-        </Collapse>
-      )}
 
       {/* Profile Modal */}
       <Modal open={open} onClose={() => setOpen(false)}>
@@ -169,58 +130,40 @@ export default function DirectorNavbar() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            textAlign: "center", // center align all text
+            textAlign: "center",
           }}
         >
           {loadingProfile ? (
-            <Typography variant="body1">Loading profile...</Typography>
+            <Typography variant="body1" sx={{ mt: 4 }}>
+              Loading user profile...
+            </Typography>
           ) : (
             <>
               {/* Profile Image or Icon */}
-              <label htmlFor="profile-pic-upload">
-                <IconButton
-                  component="span"
-                  sx={{
-                    bgcolor: "#e8eaf6",
-                    mb: 2,
-                    "&:hover": { bgcolor: "#c5cae9" },
-                    width: 130,
-                    height: 130,
-                    overflow: "hidden",
-                    mx: "auto",
-                  }}
-                >
-                  {staff?.profilePic ? (
-                    <img
-                      src={staff.profilePic}
-                      alt="Profile"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <AccountCircleIcon
-                      sx={{ fontSize: 80, color: "#3f51b5" }}
-                    />
-                  )}
-                </IconButton>
-              </label>
-              <input
-                type="file"
-                id="profile-pic-upload"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    console.log("Profile pic uploaded:", file.name);
-                    // TODO: handle upload & update profile pic
-                  }
+              <IconButton
+                sx={{
+                  bgcolor: "#e8eaf6",
+                  mb: 2,
+                  width: 130,
+                  height: 130,
+                  overflow: "hidden",
                 }}
-              />
+              >
+                {staff?.profilePic ? (
+                  <img
+                    src={staff.profilePic}
+                    alt="Profile"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <AccountCircleIcon sx={{ fontSize: 80, color: "#3f51b5" }} />
+                )}
+              </IconButton>
 
               {/* User Info */}
               <Typography
@@ -241,14 +184,12 @@ export default function DirectorNavbar() {
                   <strong>Role:</strong> {staff?.role || "N/A"}
                 </Typography>
                 <Typography variant="body1" sx={{ color: "#212121" }}>
-                  <strong>Hostel:</strong> {staff?.hostel || "N/A"}
+                  <strong>batch:</strong> {staff?.name || "All"}
                 </Typography>
               </Box>
 
               {/* Action Buttons */}
-              <Box
-                sx={{ display: "flex", gap: 2, width: "100%", mt: "auto" }}
-              >
+              <Box sx={{ display: "flex", gap: 2, width: "100%", mt: "auto" }}>
                 <Button
                   variant="contained"
                   color="primary"
