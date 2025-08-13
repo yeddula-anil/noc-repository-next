@@ -7,11 +7,7 @@ export default function MyApplicationsPage() {
   const [applications, setApplications] = useState([]);
   const [loading,setLoading]=useState(true);
 
-  // Get current studentId (replace with JWT/auth logic if needed)
-  const studentId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("studentId") || "R200907"
-      : "R200907";
+ 
 
   useEffect(() => {
     async function fetchApplications() {
