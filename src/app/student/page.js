@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import {
   Typography,
@@ -9,13 +10,11 @@ import {
   Box,
   Button,
 } from "@mui/material";
-// import { useRouter } from "next/router";
 import { useRouter } from "next/navigation";
-
 
 export default function StudentLandingPage() {
   const [userName] = useState("Vikas");
-  const router=useRouter();
+  const router = useRouter();
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -51,45 +50,51 @@ export default function StudentLandingPage() {
         width: "100%",
       }}
     >
-      {/* Hero Section - flush with navbar */}
+      {/* Hero Section */}
       <Box
         sx={{
           bgcolor: "#0A2A66",
           color: "white",
           py: 10,
-          px: 0,
-          textAlign: "center",
+          px: { xs: 2, sm: 4, md: 6 },
           width: "100%",
+          display: "flex",
+          justifyContent: "center", // horizontally center content
+          textAlign: "center", // text centered for all screens
         }}
       >
-        <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2 }}>
-          Welcome, {userName}!
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{ maxWidth: "700px", mx: "auto", opacity: 0.85 }}
-        >
-          Access all your student services in one place — from hostel queries to
-          applying for NOC, out passes, and getting your bonafide certificates.
-        </Typography>
-        <Button
-          variant="contained"
-          sx={{
-            mt: 4,
-            bgcolor: "#2ECC71",
-            px: 4,
-            py: 1.5,
-            fontSize: "1rem",
-            fontWeight: "bold",
-            "&:hover": { bgcolor: "#27AE60" },
-          }}
-        >
-          Get Started
-        </Button>
+        <Box sx={{ maxWidth: 800 }}>
+          <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2 }}>
+            Welcome, {userName}!
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{ maxWidth: "700px", mx: "auto", opacity: 0.85, mb: 4 }}
+          >
+            Access all your student services in one place — from hostel queries to
+            applying for NOC, out passes, and getting your bonafide certificates.
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Button
+              variant="contained"
+              sx={{
+                bgcolor: "#2ECC71",
+                px: 4,
+                py: 1.5,
+                fontSize: "1rem",
+                fontWeight: "bold",
+                "&:hover": { bgcolor: "#27AE60" },
+              }}
+              onClick={() => router.push("/student")}
+            >
+              Get Started
+            </Button>
+          </Box>
+        </Box>
       </Box>
 
-      {/* Cards Section - no side padding */}
-      <Box sx={{ py: 8, px: 0, width: "100%", m: 0 }}>
+      {/* Cards Section */}
+      <Box sx={{ py: 8, px: { xs: 2, sm: 4, md: 6 }, width: "100%", m: 0 }}>
         <Grid container spacing={4} justifyContent="center">
           {[
             {
@@ -110,12 +115,14 @@ export default function StudentLandingPage() {
             {
               title: "Get Your Bonafide Certificate",
               desc: "Download your verified bonafide certificates anytime.",
-              action:"bonafide",
+              action: "bonafide",
             },
           ].map((card, index) => (
             <Grid key={index} item xs={12} sm={6} md={3}>
               <Card sx={{ borderRadius: 3, boxShadow: 4, height: "100%" }}>
-                <CardActionArea onClick={() =>router.push(`/student/${card.action}`)}>
+                <CardActionArea
+                  onClick={() => router.push(`/student/${card.action}`)}
+                >
                   <CardContent sx={{ textAlign: "center", p: 4 }}>
                     <Typography variant="h5" fontWeight="bold" gutterBottom>
                       {card.title}
@@ -145,6 +152,7 @@ export default function StudentLandingPage() {
           textAlign: "center",
           mt: "auto",
           width: "100%",
+          px: { xs: 2, sm: 4, md: 6 },
         }}
       >
         <Typography variant="body2">

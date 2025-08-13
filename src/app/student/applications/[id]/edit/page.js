@@ -1,66 +1,67 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CircularProgress from "@mui/material/CircularProgress";
-import MenuItem from "@mui/material/MenuItem";
+import {
+  TextField,
+  Button,
+  Typography,
+  Card,
+  CardContent,
+  CircularProgress,
+  MenuItem,
+} from "@mui/material";
 import toast from "react-hot-toast";
 
 export default function EditApplicationPage() {
   const { id } = useParams();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get("type");
   const router = useRouter();
+
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [proofName, setProofName] = useState("");
 
   const branchOptions = ["CSE", "ECE", "EEE", "MECH", "CIVIL", "IT"];
-  const yearOptions = ["1st", "2nd", "3rd", "4th"];
+  const yearOptions = ["E1", "E2", "E3", "E4"];
 
   useEffect(() => {
     async function fetchApplication() {
+      if (!id || !typeParam) {
+        toast.error("Application ID or type missing in URL");
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        // First, try to fetch from both APIs to find which exists
-        // But since you want to decide by type, we first try NOC then Outpass
-        // Or alternatively, have a backend API that returns type or you pass type as param.
-        // Here, I'll try to fetch both and pick whichever returns 200
+        const url =
+          typeParam.toLowerCase() === "noc"
+            ? `/api/noc/${id}`
+            : `/api/outpass/${id}`;
 
-        // Try NOC API
-        let res = await fetch(`/api/noc/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setApplication({ ...data, type: "NOC" });
-          setProofName(data.proof || "");
-          setLoading(false);
-          return;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch application");
+
+        const data = await res.json();
+        setApplication({ ...data, type: typeParam });
+
+        if (typeParam.toLowerCase() === "noc" && data.proof) {
+          setProofName(data.proof.filename || "Uploaded file");
+          console.log(proofName);
         }
 
-        // If no NOC, try Outpass API
-        res = await fetch(`/api/outpass/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setApplication({ ...data, type: "Outpass" });
-          setProofName(data.proof || "");
-          setLoading(false);
-          return;
-        }
-
-        // If neither API returned ok
-        setApplication(null);
         setLoading(false);
-      } catch (error) {
-        console.error("Failed to fetch application:", error);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch application");
         setApplication(null);
         setLoading(false);
       }
     }
 
     fetchApplication();
-  }, [id]);
+  }, [id, typeParam]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,50 +78,36 @@ export default function EditApplicationPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!application) return;
 
     try {
-      let url = "";
-      if (application.type === "NOC") {
-        url = `/api/noc/${id}`;
-      } else if (application.type === "OUTPASS") {
-        url = `/api/outpass/${id}`;
-      } else {
-        toast.error("Unknown application type");
-        return;
-      }
+      const url =
+        application.type.toLowerCase() === "noc"
+          ? `/api/noc/${id}`
+          : `/api/outpass/${id}`;
 
       const formData = new FormData();
-
-      // Append all fields except proof if proof is file, else keep as string
       for (const key in application) {
         if (key === "proof") {
           if (application.proof instanceof File) {
             formData.append("proof", application.proof);
-          } else if (typeof application.proof === "string") {
-            // If proof is string (existing filename), optionally skip or send as is
-            // Depends on backend, here we skip to avoid overwriting file with string
           }
         } else if (application[key] !== undefined && application[key] !== null) {
           formData.append(key, application[key]);
         }
       }
 
-      const res = await fetch(url, {
-        method: "PUT",
-        body: formData,
-      });
+      const res = await fetch(url, { method: "PUT", body: formData });
 
       if (res.ok) {
-        toast.success("Application updated successfully!", {
-          position: "top-center",
-        });
-        router.push(`/student/applications/${id}`);
+        toast.success("Application updated successfully!", { position: "top-center" });
+        router.push(`/student/applications/${id}?type=${application.type}`);
       } else {
         const errorData = await res.json();
         toast.error(errorData.message || "Failed to update application");
       }
     } catch (error) {
-      console.error("Error updating application:", error);
+      console.error(error);
       toast.error("Error updating application");
     }
   };
@@ -138,20 +125,19 @@ export default function EditApplicationPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-1 sm:p-1">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6">
       <Card className="shadow-lg border rounded-xl">
         <CardContent>
-          {/* Heading with proper margin */}
-          <div className="mb-10">
-            <Typography variant="h5" className="font-semibold text-indigo-700">
-              Edit {application.type} Application
-            </Typography>
-          </div>
+          <Typography
+            variant="h5"
+            className="font-semibold text-indigo-700 mb-6 text-center sm:text-left"
+          >
+            Edit {application.type} Application
+          </Typography>
 
-          {/* Form starts here */}
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              {/* Common fields */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <TextField
                 label="Full Name"
                 name="fullName"
@@ -173,8 +159,6 @@ export default function EditApplicationPage() {
                 value={application.collegeEmail || ""}
                 onChange={handleChange}
               />
-
-              {/* Dropdown for Branch */}
               <TextField
                 select
                 label="Branch"
@@ -189,8 +173,6 @@ export default function EditApplicationPage() {
                   </MenuItem>
                 ))}
               </TextField>
-
-              {/* Dropdown for Year */}
               <TextField
                 select
                 label="Year"
@@ -205,19 +187,22 @@ export default function EditApplicationPage() {
                   </MenuItem>
                 ))}
               </TextField>
+            </div>
 
-              <TextField
-                label="Reason"
-                name="reason"
-                fullWidth
-                multiline
-                minRows={3}
-                value={application.reason || ""}
-                onChange={handleChange}
-              />
+            {/* Reason */}
+            <TextField
+              label="Reason"
+              name="reason"
+              fullWidth
+              multiline
+              minRows={3}
+              value={application.reason || ""}
+              onChange={handleChange}
+            />
 
-              {/* NOC-specific */}
-              {application.type === "NOC" && (
+            {/* NOC only */}
+            {application.type.toLowerCase() === "noc" && (
+              <>
                 <TextField
                   label="Personal Mobile"
                   name="personalMobile"
@@ -225,80 +210,77 @@ export default function EditApplicationPage() {
                   value={application.personalMobile || ""}
                   onChange={handleChange}
                 />
-              )}
-
-              {/* Outpass-specific */}
-              {application.type === "Outpass" && (
-                <>
-                  <TextField
-                    label="Room No"
-                    name="roomNo"
-                    fullWidth
-                    value={application.roomNo || ""}
-                    onChange={handleChange}
-                  />
-                  <TextField
-                    label="Personal Mobile"
-                    name="personalMobile"
-                    fullWidth
-                    value={application.personalMobile || ""}
-                    onChange={handleChange}
-                  />
-                  <TextField
-                    label="Parent Mobile"
-                    name="parentMobile"
-                    fullWidth
-                    value={application.parentMobile || ""}
-                    onChange={handleChange}
-                  />
-                  <TextField
-                    label="From Date"
-                    type="date"
-                    name="fromDate"
-                    fullWidth
-                    value={application.fromDate || ""}
-                    onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                  <TextField
-                    label="To Date"
-                    type="date"
-                    name="toDate"
-                    fullWidth
-                    value={application.toDate || ""}
-                    onChange={handleChange}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </>
-              )}
-
-              {/* Proof Upload */}
-              <div>
-                <Typography variant="body2" className="mb-2 text-gray-700">
-                  Upload Proof Document
-                </Typography>
-                <div className="flex gap-3 items-center">
+                <div>
+                  <Typography variant="body2" className="mb-2 text-gray-700">
+                    Upload Proof Document
+                  </Typography>
                   <TextField
                     value={proofName || "No file chosen"}
                     fullWidth
-                    InputProps={{ readOnly: true }}
+                    InputProps={{
+                      readOnly: true,
+                    }}
+                    onClick={() => document.getElementById("proofInput").click()}
                   />
-                  <Button variant="outlined" component="label">
-                    Choose File
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      hidden
-                      onChange={handleFileChange}
-                    />
-                  </Button>
+                  <input
+                    type="file"
+                    id="proofInput"
+                    accept=".pdf,.jpg,.png"
+                    hidden
+                    onChange={handleFileChange}
+                  />
                 </div>
-              </div>
+              </>
+            )}
 
-              <Button type="submit" variant="contained" color="primary" fullWidth>
-                Save Changes
-              </Button>
-            </div>
+            {/* Outpass only */}
+            {application.type.toLowerCase() === "outpass" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <TextField
+                  label="Room No"
+                  name="roomNo"
+                  fullWidth
+                  value={application.roomNo || ""}
+                  onChange={handleChange}
+                />
+                <TextField
+                  label="Personal Mobile"
+                  name="personalMobile"
+                  fullWidth
+                  value={application.personalMobile || ""}
+                  onChange={handleChange}
+                />
+                <TextField
+                  label="Parent Mobile"
+                  name="parentMobile"
+                  fullWidth
+                  value={application.parentMobile || ""}
+                  onChange={handleChange}
+                />
+                <TextField
+                  label="From Date"
+                  type="date"
+                  name="fromDate"
+                  fullWidth
+                  value={application.fromDate || ""}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  label="To Date"
+                  type="date"
+                  name="toDate"
+                  fullWidth
+                  value={application.toDate || ""}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </div>
+            )}
+
+            <Button type="submit" variant="contained" color="primary" fullWidth>
+              Save Changes
+            </Button>
           </form>
         </CardContent>
       </Card>

@@ -23,43 +23,41 @@ export const StudentNavbar = () => {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Get email from session (wait for session to be loaded)
   const email = session?.user?.email;
 
-  // Fetch unread messages count when email available
   useEffect(() => {
     if (!email) return;
 
     async function fetchUnread() {
       try {
-        const res = await fetch(`/api/messages/byEmail/${encodeURIComponent(email)}`);
-        if (!res.ok) {
-          console.error("Failed to fetch messages:", res.status);
-          return;
-        }
+        const res = await fetch(
+          `/api/messages/byEmail/${encodeURIComponent(email)}`
+        );
+        if (!res.ok) return;
         const data = await res.json();
         setUnreadCount(data?.unreadCount || 0);
       } catch (err) {
-        console.error("Error fetching messages:", err);
+        console.error(err);
       }
     }
 
     fetchUnread();
   }, [email]);
 
-  // Fetch student profile based on email from session
   useEffect(() => {
     if (!email) return;
 
     const fetchProfile = async () => {
       setLoadingProfile(true);
       try {
-        const res = await fetch(`/api/student/get-profile?email=${encodeURIComponent(email)}`);
+        const res = await fetch(
+          `/api/student/get-profile?email=${encodeURIComponent(email)}`
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to fetch profile");
         setStudent(data);
       } catch (err) {
-        console.error("Failed to fetch student profile:", err);
+        console.error(err);
       } finally {
         setLoadingProfile(false);
       }
@@ -74,10 +72,8 @@ export const StudentNavbar = () => {
 
   const handleProfileClick = () => {
     if (window.innerWidth < 768) {
-      // Mobile view: go directly to profile page
       router.push("/student/edit-profile");
     } else {
-      // Desktop view: open modal
       setProfileOpen(true);
     }
   };
@@ -96,12 +92,23 @@ export const StudentNavbar = () => {
                 <img
                   src={student.profilePic}
                   alt="Profile"
-                  className="h-10 w-10 rounded-full border-2 border-white object-cover"
+                  className="rounded-full border-2 border-white object-cover"
+                  style={{
+                    width: window.innerWidth >= 768 ? 60 : 45, // larger on desktop
+                    height: window.innerWidth >= 768 ? 60 : 45,
+                  }}
                 />
               ) : (
-                <AccountCircleIcon className="h-10 w-10 text-white" />
+                <AccountCircleIcon
+                  sx={{
+                    fontSize: window.innerWidth >= 768 ? 60 : 45,
+                    color: "white",
+                  }}
+                />
               )}
-              <span className="font-bold text-lg hidden sm:block">my-Profile</span>
+              <span className="font-bold text-lg hidden sm:block">
+                my-Profile
+              </span>
             </div>
 
             {/* Right Side: Menu (Desktop) */}

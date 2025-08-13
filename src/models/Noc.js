@@ -35,6 +35,7 @@ const NocSchema = new mongoose.Schema({
   proof: {
     data: Buffer,
     contentType: String,
+    filename:String
   },
 
   approvals: [ApprovalSchema],

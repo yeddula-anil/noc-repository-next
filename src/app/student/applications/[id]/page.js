@@ -179,7 +179,7 @@ export default function ApplicationDetailsPage() {
                 variant="contained"
                 color="primary"
                 onClick={() =>
-                  router.push(`/student/applications/${id}/edit`)
+                  router.push(`/student/applications/${id}/edit?type=${type}`)
                 }
               >
                 Edit Application

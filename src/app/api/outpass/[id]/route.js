@@ -22,29 +22,38 @@ export async function GET(req,{params}) {
 
 export async function PUT(req, { params }) {
   await dbConnect();
+  const { id } = params;
 
   try {
-    const { id } = params;
-    const data = await req.json();
+    const formData = await req.formData();
 
-    // Convert date strings to Date objects
-    if (data.fromDate) data.fromDate = new Date(data.fromDate);
-    if (data.toDate) data.toDate = new Date(data.toDate);
+    // Only pick the fields that are shown in the form
+    const updateData = {};
+    for (const [key, value] of formData.entries()) {
+      if (key === "proof" || key === "approvals") continue; // skip approvals
+      if (key === "fromDate" || key === "toDate") {
+        updateData[key] = value ? new Date(value) : undefined;
+      } else {
+        updateData[key] = value;
+      }
+    }
 
-    // Update document with type "OUTPASS" only
-    const updated = await Request.findOneAndUpdate(
-      { _id: id, type: "OUTPASS" },
-      data,
-      { new: true, runValidators: true }
-    );
+    // Update only the allowed fields
+    const updatedOutpass = await Request.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).lean();
 
-    if (!updated) {
+    if (!updatedOutpass) {
       return NextResponse.json({ error: "Outpass application not found" }, { status: 404 });
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json({
+      message: "Outpass updated successfully",
+      data: updatedOutpass,
+    });
   } catch (error) {
-    console.error("❌ Error updating Outpass:", error);
-    return NextResponse.json({ error: "Failed to update Outpass application" }, { status: 500 });
+    console.error("Error updating Outpass:", error);
+    return NextResponse.json({ error: "Failed to update Outpass" }, { status: 500 });
   }
 }
