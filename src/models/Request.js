@@ -24,7 +24,7 @@ const ApprovalSchema = new mongoose.Schema({
 const RequestSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ["NOC", "OUTPASS"],
+    enum: ["OUTPASS"],
     required: true,
   },
   fullName: { type: String, required: true },

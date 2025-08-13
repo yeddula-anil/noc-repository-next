@@ -75,7 +75,7 @@ export const StudentNavbar = () => {
   const handleProfileClick = () => {
     if (window.innerWidth < 768) {
       // Mobile view: go directly to profile page
-      router.push("/student/profile");
+      router.push("/student/edit-profile");
     } else {
       // Desktop view: open modal
       setProfileOpen(true);

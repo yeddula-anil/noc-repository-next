@@ -21,42 +21,45 @@ export default function EditApplicationPage() {
   const yearOptions = ["1st", "2nd", "3rd", "4th"];
 
   useEffect(() => {
-    const dummyApplications = [
-      {
-        id: "1",
-        type: "NOC",
-        fullName: "Vikas Yeddula",
-        studentId: "20CS123",
-        collegeEmail: "vikas@college.edu",
-        personalMobile: "9876543210",
-        branch: "CSE",
-        year: "4th",
-        reason: "For higher studies application",
-        proof: "noc-proof.pdf",
-      },
-      {
-        id: "2",
-        type: "Outpass",
-        fullName: "Vikas Yeddula",
-        studentId: "20CS123",
-        collegeEmail: "vikas@college.edu",
-        roomNo: "B-203",
-        personalMobile: "9876543210",
-        parentMobile: "9876501234",
-        branch: "CSE",
-        year: "4th",
-        reason: "Family Function",
-        fromDate: "2025-08-05",
-        toDate: "2025-08-07",
-        proof: "outpass-proof.pdf",
-      },
-    ];
-    const found = dummyApplications.find((app) => app.id === id);
-    if (found) {
-      setApplication(found);
-      setProofName(found.proof);
+    async function fetchApplication() {
+      setLoading(true);
+      try {
+        // First, try to fetch from both APIs to find which exists
+        // But since you want to decide by type, we first try NOC then Outpass
+        // Or alternatively, have a backend API that returns type or you pass type as param.
+        // Here, I'll try to fetch both and pick whichever returns 200
+
+        // Try NOC API
+        let res = await fetch(`/api/noc/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setApplication({ ...data, type: "NOC" });
+          setProofName(data.proof || "");
+          setLoading(false);
+          return;
+        }
+
+        // If no NOC, try Outpass API
+        res = await fetch(`/api/outpass/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setApplication({ ...data, type: "Outpass" });
+          setProofName(data.proof || "");
+          setLoading(false);
+          return;
+        }
+
+        // If neither API returned ok
+        setApplication(null);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch application:", error);
+        setApplication(null);
+        setLoading(false);
+      }
     }
-    setLoading(false);
+
+    fetchApplication();
   }, [id]);
 
   const handleChange = (e) => {
@@ -72,12 +75,54 @@ export default function EditApplicationPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    toast.success("Application updated successfully!", {
-      position: "top-center",
-    });
-    router.push(`/student/applications/${id}`);
+
+    try {
+      let url = "";
+      if (application.type === "NOC") {
+        url = `/api/noc/${id}`;
+      } else if (application.type === "OUTPASS") {
+        url = `/api/outpass/${id}`;
+      } else {
+        toast.error("Unknown application type");
+        return;
+      }
+
+      const formData = new FormData();
+
+      // Append all fields except proof if proof is file, else keep as string
+      for (const key in application) {
+        if (key === "proof") {
+          if (application.proof instanceof File) {
+            formData.append("proof", application.proof);
+          } else if (typeof application.proof === "string") {
+            // If proof is string (existing filename), optionally skip or send as is
+            // Depends on backend, here we skip to avoid overwriting file with string
+          }
+        } else if (application[key] !== undefined && application[key] !== null) {
+          formData.append(key, application[key]);
+        }
+      }
+
+      const res = await fetch(url, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (res.ok) {
+        toast.success("Application updated successfully!", {
+          position: "top-center",
+        });
+        router.push(`/student/applications/${id}`);
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || "Failed to update application");
+      }
+    } catch (error) {
+      console.error("Error updating application:", error);
+      toast.error("Error updating application");
+    }
   };
 
   if (loading) {
@@ -98,10 +143,7 @@ export default function EditApplicationPage() {
         <CardContent>
           {/* Heading with proper margin */}
           <div className="mb-10">
-            <Typography
-              variant="h5"
-              className="font-semibold text-indigo-700"
-            >
+            <Typography variant="h5" className="font-semibold text-indigo-700">
               Edit {application.type} Application
             </Typography>
           </div>
@@ -253,12 +295,7 @@ export default function EditApplicationPage() {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-              >
+              <Button type="submit" variant="contained" color="primary" fullWidth>
                 Save Changes
               </Button>
             </div>

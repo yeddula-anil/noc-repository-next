@@ -14,10 +14,11 @@ import {
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTheme } from "@mui/material/styles";
 import { signOut, useSession } from "next-auth/react";
 import { useStaff } from "../../app/context/StaffContext";
+import Link from "next/link";
 
 export default function CaretakerNavbar() {
   const router = useRouter();
@@ -72,8 +73,8 @@ export default function CaretakerNavbar() {
                 src={staff.profilePic}
                 alt="Profile"
                 style={{
-                  width: 56,
-                  height: 56,
+                  width: 50,
+                  height: 50,
                   borderRadius: "50%",
                   objectFit: "cover",
                   flexShrink: 0,
@@ -84,15 +85,28 @@ export default function CaretakerNavbar() {
             )}
             <Typography
               variant="subtitle1"
-              sx={{ color: "white", fontWeight: "bold" }}
+              sx={{
+                color: "white",
+                fontWeight: "bold",
+                fontSize: isSmallScreen ? "0.8rem" : undefined, // smaller on small screens
+              }}
             >
-              my-profile
+              profile
             </Typography>
           </Box>
 
           {/* Spacer */}
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Caretaker Dashboard
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              fontSize: isSmallScreen ? "1rem" : undefined, // smaller on small screens
+            }}
+          >
+            <Link href="/caretaker/">
+            Caretaker
+            </Link>
+            
           </Typography>
 
           {/* Navbar Options */}
@@ -133,17 +147,31 @@ export default function CaretakerNavbar() {
             }}
           >
             {navItems.map((item) => (
-              <Button
+              <Box
                 key={item.label}
-                color="inherit"
-                sx={{ justifyContent: "flex-start", py: 1 }}
+                component="button"
                 onClick={() => {
                   router.push(item.path);
                   setMenuOpen(false);
                 }}
+                sx={{
+                  color: "white",
+                  textAlign: "left",
+                  py: 1,
+                  px: 1.5,
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.2)",
+                    borderRadius: 1,
+                  },
+                  outline: "none",
+                }}
               >
                 {item.label}
-              </Button>
+              </Box>
             ))}
           </Box>
         </Collapse>
