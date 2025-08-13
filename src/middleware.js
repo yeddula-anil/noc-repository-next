@@ -37,8 +37,8 @@ export async function middleware(req) {
   // 2. Allow public paths
   if (
     pathname.startsWith("/api") ||
-    pathname === "/signin" ||
-    pathname === "/signup"
+    pathname === "/login" ||
+    pathname === "/"
     
     
   ) {
@@ -67,8 +67,8 @@ export async function middleware(req) {
 export const config = {
   matcher: [
     "/", 
-    "/signin", 
-    "/signup",
+    "/login", 
+   
     "/student/:path*", 
     "/caretaker/:path*", 
     "/hod/:path*", 
