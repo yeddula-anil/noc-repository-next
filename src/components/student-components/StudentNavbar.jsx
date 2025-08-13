@@ -19,12 +19,23 @@ export const StudentNavbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [student, setStudent] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0); // Track window width
 
   const router = useRouter();
-  const { data: session, status } = useSession();
-
+  const { data: session } = useSession();
   const email = session?.user?.email;
 
+  // Update window width on mount and resize
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setWindowWidth(window.innerWidth);
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, []);
+
+  // Fetch unread messages count
   useEffect(() => {
     if (!email) return;
 
@@ -44,6 +55,7 @@ export const StudentNavbar = () => {
     fetchUnread();
   }, [email]);
 
+  // Fetch student profile
   useEffect(() => {
     if (!email) return;
 
@@ -71,7 +83,7 @@ export const StudentNavbar = () => {
   };
 
   const handleProfileClick = () => {
-    if (window.innerWidth < 768) {
+    if (windowWidth < 768) {
       router.push("/student/edit-profile");
     } else {
       setProfileOpen(true);
@@ -94,14 +106,14 @@ export const StudentNavbar = () => {
                   alt="Profile"
                   className="rounded-full border-2 border-white object-cover"
                   style={{
-                    width: window.innerWidth >= 768 ? 60 : 45, // larger on desktop
-                    height: window.innerWidth >= 768 ? 60 : 45,
+                    width: windowWidth >= 768 ? 60 : 45,
+                    height: windowWidth >= 768 ? 60 : 45,
                   }}
                 />
               ) : (
                 <AccountCircleIcon
                   sx={{
-                    fontSize: window.innerWidth >= 768 ? 60 : 45,
+                    fontSize: windowWidth >= 768 ? 60 : 45,
                     color: "white",
                   }}
                 />
