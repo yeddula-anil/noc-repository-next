@@ -65,7 +65,7 @@ export default function StudentLandingPage() {
       >
         <Box sx={{ maxWidth: 800 }}>
           <Typography variant="h3" sx={{ fontWeight: "bold", mb: 2 }}>
-            Welcome, {userName}!
+            Welcome, to NOC APPLICATION!
           </Typography>
           <Typography
             variant="h6"
